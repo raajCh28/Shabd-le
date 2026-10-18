@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Log in - Shabdle</title>
+    <link rel="stylesheet" href="/static/styles.css?v=3" />
+  </head>
+  <body class="auth-page">
+    <header class="topbar">
+      <a class="brand" href="/">SH<strong>ABDLE</strong></a>
+    </header>
+    <main class="auth-card">
+      <p class="eyebrow">Welcome back</p>
+      <h1>Log in</h1>
+      <p class="muted">Your daily word is waiting.</p>
+      <form id="auth-form">
+        <label>
+          Username
+          <input id="username" autocomplete="username" required />
+        </label>
+        <label>
+          Password
+          <input
+            id="password"
+            type="password"
+            autocomplete="current-password"
+            required
+          />
+        </label>
+        <button class="button primary-button" type="submit">
+          Log in <span>→</span>
+        </button>
+      </form>
+      <p class="auth-foot"><a href="/forgot-password.html">Forgot password?</a></p>
+      <p class="auth-foot">
+        New here? <a href="/register.html">Create an account</a>
+      </p>
+    </main>
+    <div id="toast" class="toast" role="status"></div>
+    <script src="/static/auth.js"></script>
+    <script>initAuth("login");</script>
+  </body>
+</html>

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Create a word - Shabdle</title>
+    <link rel="stylesheet" href="/static/styles.css?v=3" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">SH<strong>ABDLE</strong></a>
+      <nav id="nav"></nav>
+    </header>
+    <main class="content-shell">
+      <a class="back-link" href="/">← Home</a>
+      <div class="page-title">
+        <p class="eyebrow">A word just for them</p>
+        <h1>Make a custom puzzle</h1>
+        <p class="muted">
+          Pick any word from 3 to 10 letters. They won’t need a dictionary.
+        </p>
+      </div>
+      <section class="panel create-panel">
+        <form id="create-form">
+          <label>
+            Your secret word
+            <input
+              id="custom-word"
+              type="text"
+              minlength="3"
+              maxlength="10"
+              pattern="[A-Za-z]{3,10}"
+              autocomplete="off"
+              required
+              placeholder="e.g. starlight"
+            />
+            <small>The answer stays hidden until the game ends.</small>
+          </label>
+          <button class="button primary-button" type="submit">
+            Create share link <span>→</span>
+          </button>
+        </form>
+        <div id="share-result" class="share-result" hidden></div>
+      </section>
+    </main>
+    <div id="toast" class="toast" role="status"></div>
+    <script src="/static/common.js"></script>
+    <script src="/static/custom.js"></script>
+    <script>window.Shabdle.initCreate();</script>
+  </body>
+</html>

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Your dashboard - Shabdle</title>
+    <link rel="stylesheet" href="/static/styles.css?v=3" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">SH<strong>ABDLE</strong></a>
+      <nav id="nav"></nav>
+    </header>
+    <main class="content-shell">
+      <a class="back-link" href="/">← Home</a>
+      <div class="page-title">
+        <p class="eyebrow">The bigger picture</p>
+        <h1>Your word story</h1>
+        <p class="muted">Daily stats, pulled together across every device.</p>
+      </div>
+      <section class="stats-grid" id="stats"></section>
+      <section class="panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Winning guesses</p>
+            <h2>Guess distribution</h2>
+          </div>
+        </div>
+        <div id="distribution" class="distribution"></div>
+      </section>
+      <section class="panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Your dailies</p>
+            <h2>History</h2>
+          </div>
+        </div>
+        <div id="history" class="table-wrap"></div>
+      </section>
+      <section class="panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Made by you</p>
+            <h2>Custom games</h2>
+          </div>
+          <a class="text-link" href="/create.html">Create one +</a>
+        </div>
+        <div id="custom-games" class="game-list"></div>
+      </section>
+    </main>
+    <div id="toast" class="toast" role="status"></div>
+    <script src="/static/common.js"></script>
+    <script src="/static/dashboard.js"></script>
+    <script>window.Shabdle.initDashboard();</script>
+  </body>
+</html>

@@ -1,0 +1,52 @@
+.normal-settings {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 14px;
+  margin: 28px auto;
+  text-align: left;
+}
+
+.normal-setting-field {
+  display: grid;
+  gap: 8px;
+}
+
+.normal-settings label {
+  color: #d5dfd8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.normal-settings select,
+.normal-settings input {
+  width: 100%;
+  min-height: 45px;
+  padding: 10px 12px;
+  border: 1px solid #344144;
+  border-radius: 8px;
+  outline: none;
+  background: #101719;
+  color: #f1f4ec;
+}
+
+.normal-settings select:focus,
+.normal-settings input:focus {
+  border-color: #a8df65;
+  box-shadow: 0 0 0 3px rgba(171, 226, 96, 0.12);
+}
+
+.normal-settings .primary-button { min-height: 45px; margin: 0; }
+
+#normal-game[hidden],
+#normal-settings[hidden],
+#normal-again[hidden] {
+  display: none;
+}
+
+#normal-again { margin: 20px auto 0; }
+
+@media (max-width: 620px) {
+  .normal-settings { grid-template-columns: 1fr 1fr; }
+  .normal-settings .primary-button { grid-column: 1 / -1; }
+}

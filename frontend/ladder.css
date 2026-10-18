@@ -1,0 +1,24 @@
+.ladder-status {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  flex-wrap: wrap;
+  margin: 26px auto 20px;
+  padding: 16px 18px;
+  max-width: 680px;
+  border: 1px solid #34443a;
+  border-radius: 14px;
+  background: linear-gradient(120deg, rgba(29, 43, 37, .9), rgba(24, 33, 37, .9));
+}
+
+.ladder-status > div:not(.ladder-rungs) { display: grid; gap: 4px; }
+.ladder-status small { color: var(--muted); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+.ladder-status strong { color: var(--accent); font: 700 17px 'Manrope', sans-serif; }
+.ladder-rungs { display: flex; flex: 1 1 240px; gap: 4px; align-items: end; }
+.ladder-rungs span { display: grid; flex: 1; height: 22px; place-items: center; border-radius: 5px; background: #293439; color: #788681; font-size: 9px; transition: background .25s, transform .25s; }
+.ladder-rungs span.reached { background: #a8e952; color: #19221c; transform: translateY(-3px); }
+.ladder-board .tile { border-width: 1px; font-size: clamp(8px, calc(62vw / var(--word-length)), 28px); }
+.ladder-status.error { display: block; border-color: #8b4949; color: #ffd0c8; }
+.ladder-status.error a { display: inline-block; margin-left: 8px; text-decoration: underline; }
+.ladder-controls { min-height: 34px; margin-top: 8px; }
+.ladder-next { display: inline-block; margin: 8px; color: var(--accent); font-weight: 700; }

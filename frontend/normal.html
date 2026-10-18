@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Normal Mode - Shabdle</title>
+    <link rel="stylesheet" href="/static/styles.css?v=3" />
+    <link rel="stylesheet" href="/static/normal.css?v=1" />
+    <link rel="stylesheet" href="/static/game-feedback.css?v=3" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">SH<strong>ABDLE</strong></a>
+      <nav id="nav"></nav>
+    </header>
+    <main class="game-shell">
+      <a class="back-link" href="/">← Home</a>
+      <p class="eyebrow">Free play</p>
+      <h1>Normal Mode</h1>
+      <p class="muted">Choose your word length and number of tries. Start a new round whenever you like.</p>
+
+      <form id="normal-settings" class="panel normal-settings">
+        <div class="normal-setting-field">
+          <label for="word-length">Word length</label>
+          <select id="word-length" name="length">
+            <option value="3">3 letters</option>
+            <option value="4">4 letters</option>
+            <option value="5" selected>5 letters</option>
+            <option value="6">6 letters</option>
+            <option value="7">7 letters</option>
+            <option value="8">8 letters</option>
+            <option value="9">9 letters</option>
+            <option value="10">10 letters</option>
+            <option value="11">11 letters</option>
+            <option value="12">12 letters</option>
+            <option value="13">13 letters</option>
+            <option value="14">14 letters</option>
+            <option value="15">15 letters</option>
+            <option value="16">16 letters</option>
+            <option value="17">17 letters</option>
+            <option value="18">18 letters</option>
+            <option value="19">19 letters</option>
+            <option value="20">20 letters</option>
+          </select>
+        </div>
+        <div class="normal-setting-field">
+          <label for="try-count">Number of tries</label>
+          <input id="try-count" name="max_guesses" type="number" min="1" max="12" value="6" required />
+        </div>
+        <button class="button primary-button" type="submit">Start a round →</button>
+      </form>
+
+      <section id="normal-game" hidden>
+        <p id="normal-status" class="muted" aria-live="polite"></p>
+        <div id="normal-board" class="board"></div>
+        <div id="normal-keyboard" class="keyboard"></div>
+        <p id="normal-message" class="game-message" aria-live="polite"></p>
+        <button id="normal-again" class="button primary-button" type="button" hidden>Choose settings / play again</button>
+      </section>
+    </main>
+    <div id="toast" class="toast" role="status"></div>
+    <script src="/static/common.js"></script>
+    <script src="/static/game-feedback.js?v=3"></script>
+    <script src="/static/normal.js?v=1"></script>
+  </body>
+</html>

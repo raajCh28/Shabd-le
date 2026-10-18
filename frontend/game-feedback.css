@@ -1,0 +1,78 @@
+.answer-popup {
+  width: min(430px, calc(100vw - 36px));
+  padding: 0;
+  overflow: visible;
+  border: 1px solid rgba(182, 246, 91, .52);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text);
+}
+
+.answer-popup::backdrop {
+  background: rgba(4, 9, 8, .78);
+  backdrop-filter: blur(7px);
+  animation: answer-backdrop-in .22s ease-out both;
+}
+
+.answer-popup[open] .answer-popup-card {
+  animation: answer-jiggle .72s cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.answer-popup-card {
+  padding: 34px 30px 28px;
+  border-radius: inherit;
+  background: radial-gradient(ellipse at 50% 0, rgba(174, 238, 87, .16), transparent 65%), #182125;
+  box-shadow: 0 28px 100px #000b, 0 0 42px rgba(174, 238, 87, .13);
+  text-align: center;
+}
+
+.answer-popup-card h2 {
+  margin: 0;
+  font: 800 clamp(27px, 7vw, 38px)/1.08 'Manrope', sans-serif;
+  letter-spacing: -.04em;
+}
+
+.answer-popup-copy { margin: 18px 0 10px; color: var(--muted); }
+.answer-popup-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 22px 0 24px;
+}
+.answer-popup-stats[hidden] { display: none; }
+.answer-popup-stats > div {
+  display: grid;
+  gap: 5px;
+  padding: 13px 10px;
+  border: 1px solid rgba(182, 246, 91, .18);
+  border-radius: 12px;
+  background: rgba(7, 14, 12, .28);
+}
+.answer-popup-stats strong { color: var(--accent); font: 800 22px 'Manrope', sans-serif; }
+.answer-popup-stats span { color: var(--muted); font-size: 11px; }
+.answer-popup-word {
+  display: block;
+  margin: 12px 0 24px;
+  color: var(--accent);
+  font: 800 clamp(26px, 8vw, 42px)/1.2 'Manrope', sans-serif;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.answer-popup-close { justify-content: center; min-width: 150px; }
+
+@keyframes answer-jiggle {
+  0% { opacity: 0; transform: translateY(24px) scale(.88) rotate(-2deg); }
+  45% { opacity: 1; transform: translateY(-4px) scale(1.03) rotate(1.4deg); }
+  58% { transform: translateY(0) scale(1) rotate(-1deg); }
+  72% { transform: translateY(-2px) rotate(.7deg); }
+  84% { transform: translateY(0) rotate(-.3deg); }
+  100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); }
+}
+
+@keyframes answer-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .answer-popup[open] .answer-popup-card,
+  .answer-popup::backdrop { animation-duration: .01ms; }
+}

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Create account - Shabdle</title>
+    <link rel="stylesheet" href="/static/styles.css?v=3" />
+  </head>
+  <body class="auth-page">
+    <header class="topbar">
+      <a class="brand" href="/">SH<strong>ABDLE</strong></a>
+    </header>
+    <main class="auth-card">
+      <p class="eyebrow">Start your streak</p>
+      <h1>Create account</h1>
+      <p class="muted">A few details, then you’re in.</p>
+      <form id="auth-form">
+        <label>Username<input id="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" autocomplete="username" required /><small>3–24 letters, numbers, or underscores</small></label>
+        <label>
+          Email
+          <input id="email" type="email" autocomplete="email" required />
+        </label>
+        <label>
+          Password
+          <input
+            id="password"
+            type="password"
+            autocomplete="new-password"
+            minlength="8"
+            required
+          />
+          <small>At least 8 characters</small>
+        </label>
+        <button class="button primary-button" type="submit">
+          Create account <span>→</span>
+        </button>
+      </form>
+      <p class="auth-foot">
+        Already have an account? <a href="/login.html">Log in</a>
+      </p>
+    </main>
+    <div id="toast" class="toast" role="status"></div>
+    <script src="/static/auth.js"></script>
+    <script>initAuth("register");</script>
+  </body>
+</html>

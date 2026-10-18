@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ladder - Shabdle</title>
+    <link rel="stylesheet" href="/static/styles.css?v=3" />
+    <link rel="stylesheet" href="/static/ladder.css" />
+    <link rel="stylesheet" href="/static/game-feedback.css?v=5" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">SH<strong>ABDLE</strong></a>
+      <nav id="nav"></nav>
+    </header>
+    <main class="game-shell ladder-shell">
+      <a class="back-link" href="/">← Home</a>
+      <p class="eyebrow">The Ladder</p>
+      <h1>How far can you climb?</h1>
+      <p class="muted" id="game-subtitle">
+        Solve each word to climb from 5 letters to 20. Six guesses per step; a miss sends you back to five.
+      </p>
+      <section class="ladder-status" id="ladder-status" aria-live="polite"><span>Loading your climb…</span></section>
+      <div class="board ladder-board" id="board"></div>
+      <div id="keyboard" class="keyboard"></div>
+      <p id="game-message" class="game-message" aria-live="polite"></p>
+    </main>
+    <div id="toast" class="toast" role="status"></div>
+    <script src="/static/game-feedback.js?v=5"></script>
+    <script src="/static/ladder.js?v=5" defer></script>
+  </body>
+</html>
