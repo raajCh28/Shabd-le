@@ -42,17 +42,12 @@ LadderProgress.__table__.create(bind=engine, checkfirst=True)
 
 def migrate_schema():
     user_columns = {column["name"] for column in inspect(engine).get_columns("users")}
-    verification_columns = {column["name"] for column in inspect(engine).get_columns("email_verifications")}
     with engine.begin() as connection:
         if "email_verified" not in user_columns:
-            connection.execute(text("ALTER TABLE users ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT 0"))
+            connection.execute(text("ALTER TABLE users ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT 1"))
         username_was_missing = "username" not in user_columns
         if username_was_missing:
             connection.execute(text("ALTER TABLE users ADD COLUMN username VARCHAR(24)"))
-        if "attempts" not in verification_columns:
-            connection.execute(text("ALTER TABLE email_verifications ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0"))
-        if "purpose" not in verification_columns:
-            connection.execute(text("ALTER TABLE email_verifications ADD COLUMN purpose VARCHAR(32) NOT NULL DEFAULT 'email_verification'"))
         ladder_columns = {column["name"] for column in inspect(engine).get_columns("ladder_progress")}
         if "guesses_json" not in ladder_columns:
             connection.execute(text("ALTER TABLE ladder_progress ADD COLUMN guesses_json VARCHAR NOT NULL DEFAULT '[]'"))
@@ -123,8 +118,6 @@ def current_user(cred: HTTPAuthorizationCredentials | None = Depends(bearer), db
     user = db.get(User, user_id) if user_id else None
     if not user:
         raise HTTPException(401, "Login required")
-    if not user.email_verified:
-        raise HTTPException(403, "Verify your email before playing")
     return user
 
 
@@ -341,7 +334,7 @@ def home():
 
 @app.get("/{page}.html", include_in_schema=False)
 def page_file(page: str):
-    allowed = {"login", "register", "daily", "normal", "create", "dashboard", "game", "verify", "forgot-password", "ladder"}
+    allowed = {"login", "register", "daily", "normal", "create", "dashboard", "game", "ladder"}
     if page not in allowed:
         raise HTTPException(404, "Page not found")
     return FileResponse(

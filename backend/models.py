@@ -14,19 +14,7 @@ class User(Base):
     username = Column(String(24), unique=True, index=True, nullable=False)
     password_hash = Column(String, nullable=False)
     display_name = Column(String, default="", nullable=False)
-    email_verified = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-
-
-class EmailVerification(Base):
-    __tablename__ = "email_verifications"
-
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    token_hash = Column(String(64), unique=True, nullable=False, index=True)
-    purpose = Column(String(32), default="email_verification", nullable=False)
-    attempts = Column(Integer, default=0, nullable=False)
-    expires_at = Column(DateTime, nullable=False)
+    email_verified = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 

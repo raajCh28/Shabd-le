@@ -14,8 +14,13 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: DATABASE_URL
-        sync: false
-      - key: RESEND_API_KEY
-        sync: false
-      - key: EMAIL_FROM
-        sync: false
+        fromDatabase:
+          name: shabdle-db
+          property: connectionString
+
+databases:
+  - name: shabdle-db
+    databaseName: shabdle
+    user: shabdle
+    region: oregon
+    plan: free
