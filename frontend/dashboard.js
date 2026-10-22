@@ -6,15 +6,15 @@ async function initDashboard() {
 
   try {
     const [stats, games] = await Promise.all([
-      api("/api/stats/me"),
+      api("/api/normal/stats"),
       api("/api/custom/mine"),
     ]);
     const cards = [
-      [stats.solved_label, "Solved / played"],
-      [stats.win_pct + "%", "Win rate"],
+      [`${stats.wins} / ${stats.games_played}`, "Solved / played"],
+      [stats.win_rate + "%", "Win rate"],
       [stats.current_streak, "Current streak"],
-      [stats.max_streak, "Best streak"],
-      [stats.played, "Dailies played"],
+      [stats.best_streak, "Best streak"],
+      [stats.average_guesses ?? "—", "Average guesses"],
     ];
 
     $("#stats").innerHTML = cards
@@ -44,13 +44,14 @@ async function initDashboard() {
     $("#history").innerHTML = stats.history.length
       ? `<table>
           <thead>
-            <tr><th>Date</th><th>Result</th><th>Guesses</th></tr>
+            <tr><th>Played</th><th>Game</th><th>Result</th><th>Guesses</th></tr>
           </thead>
           <tbody>
             ${stats.history
               .map(
                 (row) => `<tr>
                   <td>${escapeHtml(row.date)}</td>
+                  <td>${row.length} letters${row.hard_mode ? " · Hard" : ""}</td>
                   <td><span class="pill ${row.won ? "won" : "lost"}">
                     ${row.won ? "Solved" : "Missed"}
                   </span></td>
@@ -60,7 +61,7 @@ async function initDashboard() {
               .join("")}
           </tbody>
         </table>`
-      : '<p class="muted empty-state">Your completed Daily games will appear here.</p>';
+      : '<p class="muted empty-state">Your completed Normal Mode games will appear here.</p>';
 
     $("#custom-games").innerHTML = games.created.length
       ? games.created

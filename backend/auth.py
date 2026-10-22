@@ -5,7 +5,6 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from passlib.exc import UnknownHashError
 
-SECRET = os.environ.get("JWT_SECRET")
 ALGO = "HS256"
 EXPIRE_DAYS = 7
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")

@@ -25,7 +25,7 @@ Registration creates an account immediately and signs the player in. Email verif
 - Username/password login, account registration, bcrypt hashes, seven-day JWTs, and login throttling. Registration signs the player in immediately without email verification.
 - Email is collected during registration, but is not verified and is not used for account recovery. Password reset is disabled.
 - One server-date Daily word for everyone; a result can be recorded once per user and date.
-- Normal Mode lets players choose a 3–20-letter word and 1–12 guesses, then start another round.
+- Normal Mode starts immediately with 5 letters and 6 guesses. Its settings button supports 3–20 letters, 2–8 guesses, and Hard Mode clue rules. Separate Normal Mode stats appear after each completed round.
 - Ladder runs from 5 to 20 letters. Each solved word advances one step; a missed step resets the run with a different five-letter word. Progress and guesses are saved on the server.
 - Custom words from 3 to 10 letters with random share codes.
 - Duplicate-aware server scoring, finished-game re-verification, and dashboard history/stats.

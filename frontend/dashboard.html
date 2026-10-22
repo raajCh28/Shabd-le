@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Your dashboard - Shabdle</title>
-    <link rel="stylesheet" href="/static/styles.css?v=3" />
+    <link rel="stylesheet" href="/static/styles.css?v=8" />
   </head>
   <body>
     <header class="topbar">
@@ -16,13 +16,13 @@
       <div class="page-title">
         <p class="eyebrow">The bigger picture</p>
         <h1>Your word story</h1>
-        <p class="muted">Daily stats, pulled together across every device.</p>
+        <p class="muted">Normal Mode stats, pulled together across every device.</p>
       </div>
       <section class="stats-grid" id="stats"></section>
       <section class="panel">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Winning guesses</p>
+            <p class="eyebrow">Normal Mode wins</p>
             <h2>Guess distribution</h2>
           </div>
         </div>
@@ -31,7 +31,7 @@
       <section class="panel">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Your dailies</p>
+            <p class="eyebrow">Your recent games</p>
             <h2>History</h2>
           </div>
         </div>
@@ -49,8 +49,8 @@
       </section>
     </main>
     <div id="toast" class="toast" role="status"></div>
-    <script src="/static/common.js"></script>
-    <script src="/static/dashboard.js"></script>
+    <script src="/static/common.js?v=2"></script>
+    <script src="/static/dashboard.js?v=2"></script>
     <script>window.Shabdle.initDashboard();</script>
   </body>
 </html>

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Shabdle - Play</title>
-    <link rel="stylesheet" href="/static/styles.css?v=3" />
+    <link rel="stylesheet" href="/static/styles.css?v=8" />
   </head>
   <body>
     <header class="topbar">
@@ -13,14 +13,25 @@
     </header>
     <main class="shell">
       <section class="hero">
-        <p class="eyebrow" id="home-greeting">A little word ritual</p>
-        <h1>Find the word.<br /><span>Make it yours.</span></h1>
-        <p class="lead">
-          One shared daily puzzle, or make a word for someone else to solve.
-        </p>
+        <div class="hero-copy">
+          <p class="eyebrow" id="home-greeting">A little word ritual</p>
+          <h1>Find the word.<br /><span>Make it yours.</span></h1>
+          <p class="lead">
+            One shared daily puzzle, or make a word for someone else to solve.
+          </p>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <span class="art-tile art-correct">S</span>
+          <span class="art-tile art-absent">H</span>
+          <span class="art-tile art-present">A</span>
+          <span class="art-tile art-absent">B</span>
+          <span class="art-tile art-present">D</span>
+          <span class="art-tile art-absent">L</span>
+          <span class="art-tile art-absent">E</span>
+        </div>
       </section>
       <div class="home-grid">
-        <a class="choice primary" href="/daily.html">
+        <a class="choice primary" href="/daily.html" data-home-option>
           <span class="choice-icon">▦</span>
           <span>
             <strong>Play Daily</strong>
@@ -28,20 +39,20 @@
           </span>
           <span class="arrow">→</span>
         </a>
-        <a class="choice" href="/normal.html">
+        <a class="choice" href="/normal.html" data-home-option>
           <span class="choice-icon">⌘</span>
           <span>
             <strong>Normal Mode</strong>
-            <small>Choose a word length and number of tries. Play again anytime.</small>
+            <small>Set the length, turn on Hard Mode, and play unlimited rounds.</small>
           </span>
           <span class="arrow">→</span>
         </a>
-        <a class="choice ladder-choice" href="/ladder.html">
+        <a class="choice ladder-choice" href="/ladder.html" data-home-option>
           <span class="choice-icon">↟</span>
           <span><strong>Climb the Ladder</strong><small>Five letters to twenty. One miss resets the run.</small></span>
           <span class="arrow">→</span>
         </a>
-        <a class="choice" href="/create.html">
+        <a class="choice" href="/create.html" data-home-option>
           <span class="choice-icon">✦</span>
           <span>
             <strong>Create a custom word</strong>
@@ -52,8 +63,8 @@
       </div>
     </main>
     <div id="toast" class="toast" role="status"></div>
-    <script src="/static/common.js"></script>
-    <script src="/static/home.js?v=3"></script>
+    <script src="/static/common.js?v=2"></script>
+    <script src="/static/home.js?v=4"></script>
     <script>window.Shabdle.initHome();</script>
   </body>
 </html>

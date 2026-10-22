@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Custom word - Shabdle</title>
-    <link rel="stylesheet" href="/static/styles.css?v=3" />
-    <link rel="stylesheet" href="/static/game-feedback.css?v=3" />
+    <link rel="stylesheet" href="/static/styles.css?v=8" />
+    <link rel="stylesheet" href="/static/game-feedback.css?v=7" />
   </head>
   <body>
     <header class="topbar">
@@ -17,6 +17,11 @@
       <p class="eyebrow">Custom word</p>
       <h1>Someone made this for you.</h1>
       <p class="muted" id="game-subtitle">Six tries. You’ve got this.</p>
+      <div class="game-legend" aria-label="Tile colors">
+        <span><i class="legend-tile correct"></i> Right place</span>
+        <span><i class="legend-tile present"></i> In the word</span>
+        <span><i class="legend-tile absent"></i> Not in word</span>
+      </div>
       <div class="board" id="board"></div>
       <div id="keyboard" class="keyboard"></div>
       <p id="game-message" class="game-message" aria-live="polite"></p>
@@ -25,9 +30,9 @@
       </div>
     </main>
     <div id="toast" class="toast" role="status"></div>
-    <script src="/static/common.js"></script>
-    <script src="/static/game-feedback.js?v=3"></script>
-    <script src="/static/game-engine.js?v=3"></script>
+    <script src="/static/common.js?v=2"></script>
+    <script src="/static/game-feedback.js?v=6"></script>
+    <script src="/static/game-engine.js?v=7"></script>
     <script src="/static/custom-game.js"></script>
   </body>
 </html>

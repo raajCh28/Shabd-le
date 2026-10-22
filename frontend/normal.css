@@ -1,52 +1,211 @@
-.normal-settings {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 14px;
-  margin: 28px auto;
+.normal-shell { max-width: 760px; }
+
+.normal-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 18px 0 18px;
   text-align: left;
 }
 
-.normal-setting-field {
-  display: grid;
+.normal-toolbar h1 { margin: 0; }
+.normal-toolbar .muted { margin: 7px 0 0; }
+
+.normal-tools {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
   gap: 8px;
 }
 
-.normal-settings label {
-  color: #d5dfd8;
-  font-size: 12px;
-  font-weight: 700;
+.tool-button {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
 }
 
-.normal-settings select,
-.normal-settings input {
+.tool-button:hover,
+.tool-button[aria-expanded="true"] {
+  border-color: var(--accent);
+  background: #30283d;
+  transform: translateY(-1px);
+}
+
+.tool-button svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.normal-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(330px, calc(100vw - 32px));
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #201c27;
+  box-shadow: 0 18px 48px rgba(2, 6, 23, 0.42);
+  text-align: left;
+  animation: normal-menu-in 170ms ease-out;
+}
+
+.normal-settings { display: grid; gap: 14px; }
+.normal-menu[hidden] { display: none; }
+
+.menu-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text);
+  font: 700 14px 'Manrope', sans-serif;
+}
+
+.menu-close {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.menu-close:hover { background: #352d40; color: var(--text); }
+
+.normal-setting-field { display: grid; gap: 7px; }
+.normal-setting-field label { display: flex; align-items: center; justify-content: space-between; }
+.normal-settings label { color: #d5deec; font-size: 12px; font-weight: 700; }
+.normal-setting-field output { color: var(--accent); font-size: 13px; font-variant-numeric: tabular-nums; }
+
+.normal-settings select {
   width: 100%;
-  min-height: 45px;
-  padding: 10px 12px;
-  border: 1px solid #344144;
-  border-radius: 8px;
+  height: 42px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
   outline: none;
-  background: #101719;
-  color: #f1f4ec;
+  background: #17151c;
+  color: var(--text);
+}
+
+.normal-settings input[type="range"] {
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
 }
 
 .normal-settings select:focus,
-.normal-settings input:focus {
-  border-color: #a8df65;
-  box-shadow: 0 0 0 3px rgba(171, 226, 96, 0.12);
+.normal-settings input[type="range"]:focus { outline: 3px solid rgba(var(--accent-rgb), .22); }
+
+.hard-mode-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #17151c;
+  cursor: pointer;
 }
 
-.normal-settings .primary-button { min-height: 45px; margin: 0; }
+.hard-mode-setting span { display: grid; gap: 3px; }
+.hard-mode-setting strong { color: var(--text); font-size: 13px; }
+.hard-mode-setting small { color: var(--muted); font-size: 11px; font-weight: 500; }
 
-#normal-game[hidden],
-#normal-settings[hidden],
-#normal-again[hidden] {
-  display: none;
+.hard-mode-setting input[role="switch"] {
+  position: relative;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 24px;
+  margin: 0;
+  appearance: none;
+  border: 1px solid #51495b;
+  border-radius: 999px;
+  background: #393240;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease;
 }
 
-#normal-again { margin: 20px auto 0; }
+.hard-mode-setting input[role="switch"]::before {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #d9d1e3;
+  content: "";
+  transition: transform 160ms ease, background 160ms ease;
+}
 
-@media (max-width: 620px) {
-  .normal-settings { grid-template-columns: 1fr 1fr; }
-  .normal-settings .primary-button { grid-column: 1 / -1; }
+.hard-mode-setting input[role="switch"]:checked { border-color: var(--accent); background: #7655ad; }
+.hard-mode-setting input[role="switch"]:checked::before { transform: translateX(18px); background: #fff; }
+
+.normal-settings .primary-button,
+.normal-stats-panel .primary-button { min-height: 42px; margin: 0; }
+
+.normal-status { min-height: 20px; margin: 0 0 10px; }
+.normal-message { min-height: 24px; }
+.answer-reveal { margin: 0 0 14px; color: var(--accent); font: 700 15px 'Manrope', sans-serif; letter-spacing: .04em; }
+.answer-reveal[hidden] { display: none; }
+
+.normal-stats-panel { display: grid; gap: 13px; }
+.normal-round-summary { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.normal-round-summary[hidden] { display: none; }
+
+.normal-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.normal-stat-grid > div {
+  display: grid;
+  gap: 3px;
+  min-height: 64px;
+  align-content: center;
+  padding: 9px;
+  border: 1px solid #403747;
+  border-radius: 10px;
+  background: #17151c;
+  text-align: center;
+}
+
+.normal-stat-grid .stat-wide { grid-column: 1 / -1; }
+.normal-stat-grid strong { color: #e6d7ff; font: 800 19px 'Manrope', sans-serif; }
+.normal-stat-grid span { color: var(--muted); font-size: 10px; }
+
+@keyframes normal-menu-in {
+  from { opacity: 0; transform: translateY(-6px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 440px) {
+  .normal-toolbar h1 { font-size: 29px; }
+  .normal-tools { gap: 6px; }
+  .tool-button { width: 40px; height: 40px; }
 }

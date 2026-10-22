@@ -4,63 +4,100 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Normal Mode - Shabdle</title>
-    <link rel="stylesheet" href="/static/styles.css?v=3" />
-    <link rel="stylesheet" href="/static/normal.css?v=1" />
-    <link rel="stylesheet" href="/static/game-feedback.css?v=3" />
+    <link rel="stylesheet" href="/static/styles.css?v=8" />
+    <link rel="stylesheet" href="/static/normal.css?v=10" />
   </head>
   <body>
     <header class="topbar">
       <a class="brand" href="/">SH<strong>ABDLE</strong></a>
       <nav id="nav"></nav>
     </header>
-    <main class="game-shell">
+    <main class="game-shell normal-shell">
       <a class="back-link" href="/">← Home</a>
-      <p class="eyebrow">Free play</p>
-      <h1>Normal Mode</h1>
-      <p class="muted">Choose your word length and number of tries. Start a new round whenever you like.</p>
-
-      <form id="normal-settings" class="panel normal-settings">
-        <div class="normal-setting-field">
-          <label for="word-length">Word length</label>
-          <select id="word-length" name="length">
-            <option value="3">3 letters</option>
-            <option value="4">4 letters</option>
-            <option value="5" selected>5 letters</option>
-            <option value="6">6 letters</option>
-            <option value="7">7 letters</option>
-            <option value="8">8 letters</option>
-            <option value="9">9 letters</option>
-            <option value="10">10 letters</option>
-            <option value="11">11 letters</option>
-            <option value="12">12 letters</option>
-            <option value="13">13 letters</option>
-            <option value="14">14 letters</option>
-            <option value="15">15 letters</option>
-            <option value="16">16 letters</option>
-            <option value="17">17 letters</option>
-            <option value="18">18 letters</option>
-            <option value="19">19 letters</option>
-            <option value="20">20 letters</option>
-          </select>
-        </div>
-        <div class="normal-setting-field">
-          <label for="try-count">Number of tries</label>
-          <input id="try-count" name="max_guesses" type="number" min="1" max="12" value="6" required />
-        </div>
-        <button class="button primary-button" type="submit">Start a round →</button>
-      </form>
-
       <section id="normal-game" hidden>
-        <p id="normal-status" class="muted" aria-live="polite"></p>
+        <div class="normal-toolbar">
+          <div>
+            <p class="eyebrow">Free play</p>
+            <h1>Normal Mode</h1>
+            <p class="muted">Play as many rounds as you like.</p>
+          </div>
+          <div class="normal-tools">
+            <button id="normal-stats-toggle" class="tool-button" type="button" aria-expanded="false" aria-controls="normal-stats-panel" aria-label="Normal Mode statistics" title="Statistics">
+              <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M5 20V10M12 20V4M19 20v-7" /><path d="M3 20h18" /></svg>
+            </button>
+            <button id="normal-settings-toggle" class="tool-button" type="button" aria-expanded="false" aria-controls="normal-settings" aria-label="Normal Mode settings" title="Settings">
+              <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M12 8.25a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5Z" /><path d="m19.4 13.5 1.1.85-1.1 1.9-1.32-.44a7.8 7.8 0 0 1-1.45.84l-.22 1.38h-2.2l-.32-1.25a7.7 7.7 0 0 1-1.68 0l-.32 1.25h-2.2l-.22-1.38a7.8 7.8 0 0 1-1.45-.84l-1.32.44-1.1-1.9 1.1-.85a7.2 7.2 0 0 1 0-1.68l-1.1-.85 1.1-1.9 1.32.44a7.8 7.8 0 0 1 1.45-.84l.22-1.38h2.2l.32 1.25a7.7 7.7 0 0 1 1.68 0l.32-1.25h2.2l.22 1.38a7.8 7.8 0 0 1 1.45.84l1.32-.44 1.1 1.9-1.1.85a7.2 7.2 0 0 1 0 1.68Z" /></svg>
+            </button>
+
+        <form id="normal-settings" class="normal-menu normal-settings" hidden>
+          <div class="menu-heading"><strong>Game settings</strong><button class="menu-close" type="button" data-close-menu="settings" aria-label="Close settings">×</button></div>
+          <div class="normal-setting-field">
+            <label for="word-length">Word length</label>
+            <select id="word-length" name="length">
+              <option value="3">3 letters</option>
+              <option value="4">4 letters</option>
+              <option value="5" selected>5 letters</option>
+              <option value="6">6 letters</option>
+              <option value="7">7 letters</option>
+              <option value="8">8 letters</option>
+              <option value="9">9 letters</option>
+              <option value="10">10 letters</option>
+              <option value="11">11 letters</option>
+              <option value="12">12 letters</option>
+              <option value="13">13 letters</option>
+              <option value="14">14 letters</option>
+              <option value="15">15 letters</option>
+              <option value="16">16 letters</option>
+              <option value="17">17 letters</option>
+              <option value="18">18 letters</option>
+              <option value="19">19 letters</option>
+              <option value="20">20 letters</option>
+            </select>
+          </div>
+          <div class="normal-setting-field">
+            <label for="try-count">Number of tries <output id="try-count-value" for="try-count">6</output></label>
+            <input id="try-count" name="max_guesses" type="range" min="2" max="8" value="6" required />
+          </div>
+          <label class="hard-mode-setting" for="hard-mode">
+            <span>
+              <strong>Hard Mode</strong>
+              <small>Reuse every revealed green and yellow clue.</small>
+            </span>
+            <input id="hard-mode" name="hard_mode" type="checkbox" role="switch" aria-label="Enable Hard Mode" />
+          </label>
+          <button class="button primary-button" type="submit">Apply settings &amp; start a new round →</button>
+        </form>
+
+            <section id="normal-stats-panel" class="normal-menu normal-stats-panel" role="dialog" aria-label="Normal Mode statistics" hidden>
+              <div class="menu-heading"><strong>Normal Mode stats</strong><button class="menu-close" type="button" data-close-menu="stats" aria-label="Close statistics">×</button></div>
+              <p id="normal-round-summary" class="normal-round-summary" hidden></p>
+              <div id="normal-stat-grid" class="normal-stat-grid">
+                <div><strong id="normal-solved">0 / 0</strong><span>Solved / played</span></div>
+                <div><strong id="normal-win-rate">0%</strong><span>Win rate</span></div>
+                <div><strong id="normal-current-streak">0</strong><span>Current streak</span></div>
+                <div><strong id="normal-best-streak">0</strong><span>Best streak</span></div>
+                <div class="stat-wide"><strong id="normal-average-guesses">—</strong><span>Avg. guesses to solve</span></div>
+              </div>
+              <button id="normal-play-again" class="button primary-button" type="button">Play again →</button>
+            </section>
+          </div>
+        </div>
+
+        <p id="normal-status" class="muted normal-status" aria-live="polite"></p>
+        <p id="normal-answer-reveal" class="answer-reveal" aria-live="polite" hidden></p>
+        <div class="game-legend" aria-label="Tile colors">
+          <span><i class="legend-tile correct"></i> Right place</span>
+          <span><i class="legend-tile present"></i> In the word</span>
+          <span><i class="legend-tile absent"></i> Not in word</span>
+        </div>
         <div id="normal-board" class="board"></div>
         <div id="normal-keyboard" class="keyboard"></div>
         <p id="normal-message" class="game-message" aria-live="polite"></p>
-        <button id="normal-again" class="button primary-button" type="button" hidden>Choose settings / play again</button>
       </section>
     </main>
+
     <div id="toast" class="toast" role="status"></div>
-    <script src="/static/common.js"></script>
-    <script src="/static/game-feedback.js?v=3"></script>
-    <script src="/static/normal.js?v=1"></script>
+    <script src="/static/common.js?v=2"></script>
+    <script src="/static/normal.js?v=9"></script>
   </body>
 </html>

@@ -42,6 +42,7 @@ class NormalGame(Base):
     answer = Column(String(20), nullable=False)
     length = Column(Integer, nullable=False)
     max_guesses = Column(Integer, nullable=False)
+    hard_mode = Column(Boolean, default=False, nullable=False)
     guesses_json = Column(String, default="[]", nullable=False)
     status = Column(String(16), default="playing", nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

@@ -2,14 +2,14 @@
   width: min(430px, calc(100vw - 36px));
   padding: 0;
   overflow: visible;
-  border: 1px solid rgba(182, 246, 91, .52);
+  border: 1px solid rgba(var(--accent-rgb), .55);
   border-radius: 20px;
   background: transparent;
   color: var(--text);
 }
 
 .answer-popup::backdrop {
-  background: rgba(4, 9, 8, .78);
+  background: rgba(2, 6, 23, .78);
   backdrop-filter: blur(7px);
   animation: answer-backdrop-in .22s ease-out both;
 }
@@ -21,8 +21,8 @@
 .answer-popup-card {
   padding: 34px 30px 28px;
   border-radius: inherit;
-  background: radial-gradient(ellipse at 50% 0, rgba(174, 238, 87, .16), transparent 65%), #182125;
-  box-shadow: 0 28px 100px #000b, 0 0 42px rgba(174, 238, 87, .13);
+  background: radial-gradient(ellipse at 50% 0, rgba(var(--accent-rgb), .16), transparent 65%), #201c27;
+  box-shadow: 0 28px 100px #000000bb, 0 0 42px rgba(var(--accent-rgb), .13);
   text-align: center;
 }
 
@@ -44,9 +44,9 @@
   display: grid;
   gap: 5px;
   padding: 13px 10px;
-  border: 1px solid rgba(182, 246, 91, .18);
+  border: 1px solid rgba(var(--accent-rgb), .2);
   border-radius: 12px;
-  background: rgba(7, 14, 12, .28);
+  background: rgba(18, 16, 22, .5);
 }
 .answer-popup-stats strong { color: var(--accent); font: 800 22px 'Manrope', sans-serif; }
 .answer-popup-stats span { color: var(--muted); font-size: 11px; }
@@ -59,6 +59,7 @@
   text-transform: uppercase;
   overflow-wrap: anywhere;
 }
+.answer-popup-word[hidden] { display: none; }
 .answer-popup-close { justify-content: center; min-width: 150px; }
 
 @keyframes answer-jiggle {

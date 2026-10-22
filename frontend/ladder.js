@@ -127,6 +127,7 @@
       const updateTiles = () => {
         const rows = [...board.querySelectorAll(".row")];
         rows.forEach((row, rowIndex) => {
+          row.classList.toggle("is-active", !game.over && rowIndex === game.row);
           [...row.querySelectorAll(".tile")].forEach((tile, colIndex) => {
             if (rowIndex === game.row) {
               tile.textContent = game.current[colIndex] || "";
@@ -135,6 +136,8 @@
           });
         });
       };
+
+      updateTiles();
 
       const addLetter = (letter) => {
         if (game.over || game.submitting || game.current.length >= game.length || !/^[A-Z]$/.test(letter)) return;
@@ -164,6 +167,7 @@
             method: "POST",
             body: JSON.stringify({ guess, guesses: game.past }),
           });
+          activeRow.classList.remove("is-active");
           [...activeRow.querySelectorAll(".tile")].forEach((tile, index) => {
             tile.classList.add(result.result[index]);
             tile.classList.remove("filled");

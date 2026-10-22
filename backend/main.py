@@ -52,6 +52,9 @@ def migrate_schema():
         if "guesses_json" not in ladder_columns:
             connection.execute(text("ALTER TABLE ladder_progress ADD COLUMN guesses_json VARCHAR NOT NULL DEFAULT '[]'"))
             connection.execute(text("UPDATE ladder_progress SET guesses_used = 0"))
+        normal_columns = {column["name"] for column in inspect(engine).get_columns("normal_games")}
+        if "hard_mode" not in normal_columns:
+            connection.execute(text("ALTER TABLE normal_games ADD COLUMN hard_mode BOOLEAN NOT NULL DEFAULT 0"))
         rows = connection.execute(text("SELECT id, email, username FROM users ORDER BY id")).all()
         claimed = {username.lower() for _, _, username in rows if username}
         for user_id, email, username in rows:
@@ -283,6 +286,8 @@ def custom_guess(request: Request, code: str, data: GuessIn, user: User = Depend
     # Previously entered guesses are accepted as history for games already in progress.
     prior = validate_prior(data.guesses, answer, allowed=False)
     guess = normalize_guess(data.guess, game.length)
+    if guess != answer and guess.lower() not in VALID_GUESSES:
+        raise HTTPException(422, "Not in the English dictionary")
 
     def save(won, used, all_guesses, session):
         valid, verified_used = verify_finished_guesses(all_guesses, answer)

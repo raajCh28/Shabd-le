@@ -1,6 +1,7 @@
 (() => {
-const { $, $$, api, escapeHtml, toast, guard, setupNav, loginPath, TOKEN_KEY } = window.Shabdle;
+const { $, $$, api, toast, guard, setupNav } = window.Shabdle;
 const KEY_ROWS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
+const VICTORY_DELAY = 3000;
 
 async function initGame(mode) {
   setupNav();
@@ -13,6 +14,7 @@ async function initGame(mode) {
   const endpoint =
     mode === "daily" ? "/api/daily" : "/api/custom/" + encodeURIComponent(customCode);
   const message = $("#game-message");
+  const answerReveal = $("#answer-reveal");
 
   try {
     const info = await api(mode === "daily" ? "/api/daily/today" : endpoint);
@@ -23,6 +25,7 @@ async function initGame(mode) {
       current: "",
       past: [],
       over: info.already_played,
+      submitting: false,
       states: {},
       endpoint,
     };
@@ -75,6 +78,7 @@ async function initGame(mode) {
 
     const updateTiles = () => {
       $$(".row", board).forEach((row, rowIndex) => {
+        row.classList.toggle("is-active", !game.over && rowIndex === game.row);
         $$(".tile", row).forEach((tile, colIndex) => {
           tile.textContent =
             rowIndex === game.row ? game.current[colIndex] || "" : tile.textContent;
@@ -119,13 +123,15 @@ async function initGame(mode) {
     };
 
     const submit = async () => {
-      if (game.over || game.current.length !== game.length) {
+      if (game.over || game.submitting) return;
+      if (game.current.length !== game.length) {
         toast(`Enter ${game.length} letters first`);
         return;
       }
 
       const guess = game.current;
       const row = $(".row:nth-child(" + (game.row + 1) + ")", board);
+      game.submitting = true;
 
       try {
         const data = await api(endpoint + "/guess", {
@@ -133,6 +139,7 @@ async function initGame(mode) {
           body: JSON.stringify({ guess, guesses: game.past }),
         });
 
+        row.classList.remove("is-active");
         $$(".tile", row).forEach((tile, index) => {
           tile.style.animationDelay = `${index * 90}ms`;
           tile.classList.add(data.result[index]);
@@ -142,33 +149,31 @@ async function initGame(mode) {
         game.past.push(guess);
         game.current = "";
         game.row += 1;
+        game.submitting = false;
         updateTiles();
 
         if (data.status !== "playing") {
           game.over = true;
           keyboard.hidden = true;
-          message.innerHTML = data.status === "won"
-              ? `<strong>Lovely. You got it in ${data.guesses_used} ${
-                  data.guesses_used === 1 ? "guess" : "guesses"
-                }.</strong>`
-              : "The puzzle is complete.";
-          message.classList.add("result-message");
+          message.textContent = "";
+          if (data.status === "won") window.setTimeout(() => row.classList.add("victory"), 500);
+          if (data.status === "lost" && answerReveal) {
+            answerReveal.textContent = `The word was ${data.answer.toUpperCase()}`;
+            answerReveal.hidden = false;
+          }
 
           if (mode === "daily") {
-            api("/api/stats/me")
-              .catch(() => null)
-              .then((stats) => {
-                window.showAnswerPopup({
-                  answer: data.answer,
-                  title: data.status === "won" ? "Daily streak" : "Daily puzzle complete",
-                  message:
-                    data.status === "won"
-                      ? `Solved in ${data.guesses_used} ${data.guesses_used === 1 ? "guess" : "guesses"}.`
-                      : "The right word was",
-                  currentStreak: stats?.current_streak ?? 0,
-                  bestStreak: stats?.max_streak ?? 0,
-                });
-              });
+            const dailyStats = api("/api/stats/me").catch(() => null);
+            const showDailyResult = () => dailyStats.then((stats) => window.showAnswerPopup({
+              answer: "",
+              title: data.status === "won" ? "Daily streak" : "Daily stats",
+              message: data.status === "won"
+                ? `Solved in ${data.guesses_used} ${data.guesses_used === 1 ? "guess" : "guesses"}.`
+                : "Try again tomorrow.",
+              currentStreak: stats?.current_streak ?? 0,
+              bestStreak: stats?.max_streak ?? 0,
+            }));
+            window.setTimeout(showDailyResult, VICTORY_DELAY);
           } else {
             window.showAnswerPopup({
               answer: data.answer,
@@ -177,12 +182,15 @@ async function initGame(mode) {
           }
         }
       } catch (error) {
+        game.submitting = false;
         row.classList.remove("shake");
         void row.offsetWidth;
         row.classList.add("shake");
         if (error.message !== "Login required") toast(error.message);
       }
     };
+
+    updateTiles();
 
     keyboard.addEventListener("click", (event) => {
       const key = event.target.closest("[data-key]")?.dataset.key;

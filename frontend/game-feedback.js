@@ -1,6 +1,6 @@
 (() => {
   window.showAnswerPopup = ({
-    answer,
+    answer = "",
     title = "Good try!",
     message = "The right word was",
     currentStreak,
@@ -29,8 +29,10 @@
     dialog.querySelector(".answer-popup-copy").textContent = message;
     const answerElement = dialog.querySelector(".answer-popup-word");
     answerElement.textContent = answer;
+    answerElement.hidden = !answer;
+    const stats = dialog.querySelector(".answer-popup-stats");
+    const closeButton = dialog.querySelector(".answer-popup-close");
     if (Number.isFinite(currentStreak) && Number.isFinite(bestStreak)) {
-      const stats = dialog.querySelector(".answer-popup-stats");
       stats.hidden = false;
       dialog.querySelector(".current-streak").textContent = `${currentStreak} days`;
       dialog.querySelector(".best-streak").textContent = `${bestStreak} days`;
@@ -41,7 +43,7 @@
       dialog.close();
       dialog.remove();
     };
-    dialog.querySelector(".answer-popup-close").addEventListener("click", () => {
+    closeButton.addEventListener("click", () => {
       if (homeOnClose) {
         location.href = "/";
         return;
@@ -57,6 +59,6 @@
     });
     dialog.addEventListener("close", () => dialog.remove(), { once: true });
     dialog.showModal();
-    dialog.querySelector(".answer-popup-close").focus();
+    closeButton.focus();
   };
 })();
