@@ -1,5 +1,5 @@
 (() => {
-const { $, $$, api, toast, guard, setupNav } = window.Shabdle;
+const { $, $$, api, toast, showWordBanner, guard, setupNav } = window.Shabdle;
 const KEY_ROWS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
 const VICTORY_DELAY = 3000;
 
@@ -14,7 +14,6 @@ async function initGame(mode) {
   const endpoint =
     mode === "daily" ? "/api/daily" : "/api/custom/" + encodeURIComponent(customCode);
   const message = $("#game-message");
-  const answerReveal = $("#answer-reveal");
 
   try {
     const info = await api(mode === "daily" ? "/api/daily/today" : endpoint);
@@ -140,11 +139,12 @@ async function initGame(mode) {
         });
 
         row.classList.remove("is-active");
-        $$(".tile", row).forEach((tile, index) => {
-          tile.style.animationDelay = `${index * 90}ms`;
-          tile.classList.add(data.result[index]);
-          tile.classList.remove("filled");
-        });
+        const tiles = $$(".tile", row);
+        for (let index = 0; index < tiles.length; index += 1) {
+          tiles[index].classList.remove("filled");
+          tiles[index].classList.add(data.result[index]);
+          await new Promise((resolve) => window.setTimeout(resolve, 160));
+        }
         updateKeyboard(guess, data.result);
         game.past.push(guess);
         game.current = "";
@@ -156,10 +156,11 @@ async function initGame(mode) {
           game.over = true;
           keyboard.hidden = true;
           message.textContent = "";
-          if (data.status === "won") window.setTimeout(() => row.classList.add("victory"), 500);
-          if (data.status === "lost" && answerReveal) {
-            answerReveal.textContent = `The word was ${data.answer.toUpperCase()}`;
-            answerReveal.hidden = false;
+          if (data.status === "won") {
+            requestAnimationFrame(() => row.classList.add("victory"));
+          }
+          if (data.status === "lost") {
+            showWordBanner(data.answer);
           }
 
           if (mode === "daily") {
@@ -173,8 +174,8 @@ async function initGame(mode) {
               currentStreak: stats?.current_streak ?? 0,
               bestStreak: stats?.max_streak ?? 0,
             }));
-            window.setTimeout(showDailyResult, VICTORY_DELAY);
-          } else {
+            window.setTimeout(showDailyResult, data.status === "lost" ? 1500 : VICTORY_DELAY);
+          } else if (data.status !== "lost") {
             window.showAnswerPopup({
               answer: data.answer,
               title: data.status === "won" ? "Puzzle solved!" : "Good try!",

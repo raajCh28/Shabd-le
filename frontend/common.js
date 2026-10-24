@@ -27,6 +27,21 @@ function toast(message) {
   toast.timer = setTimeout(() => element.classList.remove("visible"), 2800);
 }
 
+function showWordBanner(word) {
+  document.querySelector(".word-banner")?.remove();
+  const banner = document.createElement("div");
+  banner.className = "word-banner";
+  banner.textContent = String(word || "").toUpperCase();
+  document.body.append(banner);
+  requestAnimationFrame(() => banner.classList.add("visible"));
+}
+
+function hideWordBanner() {
+  const banner = document.querySelector(".word-banner");
+  banner?.classList.remove("visible");
+  window.setTimeout(() => banner?.remove(), 180);
+}
+
 function loginPath() {
   const next = location.pathname + location.search;
   location.href = "/login.html?next=" + encodeURIComponent(next);
@@ -82,5 +97,5 @@ function setupNav() {
 }
 
 
-window.Shabdle = { TOKEN_KEY, $, $$, escapeHtml, toast, loginPath, api, guard, setupNav };
+window.Shabdle = { TOKEN_KEY, $, $$, escapeHtml, toast, showWordBanner, hideWordBanner, loginPath, api, guard, setupNav };
 })();

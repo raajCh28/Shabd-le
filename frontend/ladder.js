@@ -31,6 +31,27 @@
     return result;
   }
 
+  window.showLadderResultPopup = ({ title, reached, personalBest, completed }) => {
+    document.querySelector(".ladder-result-popup")?.remove();
+    const dialog = document.createElement("dialog");
+    dialog.className = "answer-popup ladder-result-popup";
+    dialog.innerHTML = `
+      <div class="answer-popup-card">
+        <p class="eyebrow">Ladder stats</p>
+        <h2>${escapeHtml(title)}</h2>
+        <div class="answer-popup-stats">
+          <div><strong>${completed ? "20 letters" : `${reached} letters`}</strong><span>You climbed</span></div>
+          <div><strong>${personalBest} letters</strong><span>Personal best</span></div>
+        </div>
+        <div class="ladder-result-actions">
+          <button class="button primary-button ladder-play-again" type="button">Play again</button>
+        </div>
+      </div>`;
+    document.body.append(dialog);
+    dialog.querySelector(".ladder-play-again").addEventListener("click", () => location.reload());
+    dialog.showModal();
+  };
+
   function showError(error) {
     if (keyboard) keyboard.hidden = true;
     if (board) board.innerHTML = "";
@@ -50,12 +71,10 @@
     const rung = Math.max(0, Math.min(20, climbed));
     statusPanel.classList.remove("error");
     statusPanel.innerHTML = `
-      <div><small>Current step</small><strong>${state.length} letters</strong></div>
-      <div><small>You climbed</small><strong>${climbed ? `Through ${climbed} letters` : "Not yet"}</strong></div>
-      <div><small>Personal best</small><strong>${state.best_length ? `${state.best_length} letters` : "Not yet"}</strong></div>
       <div class="ladder-rungs" aria-label="Climb progress">${Array.from({ length: 16 }, (_, i) => {
         const length = i + 5;
-        return `<span class="${length <= rung ? "reached" : ""}">${length}</span>`;
+        const isCurrent = length === state.length;
+        return `<span class="${length <= rung ? "reached" : ""} ${isCurrent ? "current" : ""}">${length}</span>`;
       }).join("")}</div>`;
     const subtitle = $("#game-subtitle");
     if (subtitle) {
@@ -168,11 +187,12 @@
             body: JSON.stringify({ guess, guesses: game.past }),
           });
           activeRow.classList.remove("is-active");
-          [...activeRow.querySelectorAll(".tile")].forEach((tile, index) => {
-            tile.classList.add(result.result[index]);
-            tile.classList.remove("filled");
-            tile.style.animationDelay = `${index * 45}ms`;
-          });
+          const tiles = [...activeRow.querySelectorAll(".tile")];
+          for (let index = 0; index < tiles.length; index += 1) {
+            tiles[index].classList.remove("filled");
+            tiles[index].classList.add(result.result[index]);
+            await new Promise((resolve) => window.setTimeout(resolve, 160));
+          }
           [...guess].forEach((letter, index) => {
             if ((rank[result.result[index]] || 0) > (rank[game.states[letter]] || 0)) {
               game.states[letter] = result.result[index];
@@ -203,6 +223,10 @@
           renderStatus(nextState, climbed);
           message.classList.add("result-message");
 
+          if (result.status === "won" || result.status === "complete") {
+            requestAnimationFrame(() => activeRow.classList.add("victory"));
+          }
+
           if (result.status === "won") {
             message.innerHTML = `<strong>Step cleared!</strong> Loading the ${result.next_length}-letter step…`;
             window.showAnswerPopup({
@@ -212,21 +236,22 @@
               reloadOnClose: true,
             });
           } else if (result.status === "complete") {
-            message.innerHTML = "<strong>Ladder complete!</strong> You reached 20 letters.";
-            window.showAnswerPopup({
-              answer: result.answer,
+            message.innerHTML = "";
+            window.showLadderResultPopup({
               title: "Ladder complete!",
-              message: "You reached 20 letters.",
-              homeOnClose: true,
+              reached: 20,
+              personalBest: Math.max(state.best_length || 0, 20),
+              completed: true,
             });
           } else {
-            message.innerHTML = `<strong>Run ended.</strong> You climbed through ${result.climbed_to} letters.`;
-            window.showAnswerPopup({
-              answer: result.answer,
-              title: "Ladder run ended",
-              message: "The right word for this step.",
-              homeOnClose: true,
-            });
+            message.innerHTML = "";
+            window.Shabdle.showWordBanner(result.answer);
+            window.setTimeout(() => window.showLadderResultPopup({
+              title: "Run ended",
+              reached: result.climbed_to,
+              personalBest: Math.max(state.best_length || 0, result.climbed_to || 0),
+              completed: false,
+            }), 1500);
           }
         } catch (error) {
           game.submitting = false;

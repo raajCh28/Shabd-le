@@ -4,19 +4,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Ladder - Shabdle</title>
-    <link rel="stylesheet" href="/static/styles.css?v=8" />
-    <link rel="stylesheet" href="/static/ladder.css?v=2" />
+    <link rel="stylesheet" href="/static/styles.css?v=12" />
+    <link rel="stylesheet" href="/static/ladder.css?v=4" />
     <link rel="stylesheet" href="/static/game-feedback.css?v=7" />
   </head>
-  <body>
+  <body class="compact-game-page">
     <header class="topbar">
       <a class="brand" href="/">SH<strong>ABDLE</strong></a>
       <nav id="nav"></nav>
     </header>
     <main class="game-shell ladder-shell">
-      <a class="back-link" href="/">← Home</a>
       <p class="eyebrow">The Ladder</p>
-      <h1>How far can you climb?</h1>
+      <h1 class="game-mode-title">CLIMB THE LADDER</h1>
       <p class="muted" id="game-subtitle">
         Solve each word to climb from 5 letters to 20. Six guesses per step; a miss sends you back to five.
       </p>
@@ -31,7 +30,8 @@
       <p id="game-message" class="game-message" aria-live="polite"></p>
     </main>
     <div id="toast" class="toast" role="status"></div>
+    <script src="/static/common.js?v=3"></script>
     <script src="/static/game-feedback.js?v=7"></script>
-    <script src="/static/ladder.js?v=6" defer></script>
+    <script src="/static/ladder.js?v=16" defer></script>
   </body>
 </html>

@@ -1,5 +1,5 @@
 (() => {
-  const { $, api, toast, guard, setupNav } = window.Shabdle;
+  const { $, api, toast, showWordBanner, guard, setupNav } = window.Shabdle;
   const keyRows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
   const rank = { absent: 1, present: 2, correct: 3 };
   const victoryDelay = 3000;
@@ -12,7 +12,7 @@
   const keyboard = $("#normal-keyboard");
   const status = $("#normal-status");
   const message = $("#normal-message");
-  const answerReveal = $("#normal-answer-reveal");
+
   let game = null;
 
   function buildBoard(length, maxGuesses) {
@@ -117,14 +117,14 @@
     }
   }
 
-  function revealAnswer(answer) {
-    answerReveal.textContent = `The word was ${answer.toUpperCase()}`;
-    answerReveal.hidden = false;
-  }
-
   function showFinished(result) {
     game.over = true;
     keyboard.hidden = true;
+    if (result.status === "lost") {
+      showWordBanner(result.answer);
+      window.setTimeout(() => showStats("You used all guesses."), 1500);
+      return;
+    }
     const won = result.status === "won";
     const summary = won
       ? `Solved in ${result.guesses_used} of ${game.max} guesses · ${game.length} letters${game.hardMode ? " · Hard Mode" : ""}`
@@ -136,7 +136,6 @@
     gamePanel.hidden = false;
     hideMenus();
     message.textContent = "";
-    answerReveal.hidden = true;
     syncSettings(state);
     status.textContent = `${state.length} letters · ${state.max_guesses} ${state.max_guesses === 1 ? "try" : "tries"}${state.hard_mode ? " · Hard Mode" : ""}`;
     game = {
@@ -156,7 +155,7 @@
     restoreGuesses(state.guesses);
 
     if (state.status !== "playing") {
-      if (state.status === "lost") revealAnswer(state.answer);
+
       void showFinished({ status: state.status, answer: state.answer, guesses_used: state.guesses.length });
       return;
     }
@@ -220,11 +219,12 @@
         body: JSON.stringify({ guess, guesses: game.past }),
       });
       row.classList.remove("is-active");
-      [...row.querySelectorAll(".tile")].forEach((tile, index) => {
-        tile.style.animationDelay = `${index * 80}ms`;
-        tile.classList.add(result.result[index]);
-        tile.classList.remove("filled");
-      });
+      const tiles = [...row.querySelectorAll(".tile")];
+      for (let index = 0; index < tiles.length; index += 1) {
+        tiles[index].classList.remove("filled");
+        tiles[index].classList.add(result.result[index]);
+        await new Promise((resolve) => window.setTimeout(resolve, 160));
+      }
       updateKeyboard(guess, result.result);
       game.past.push(guess);
       game.current = "";
@@ -238,9 +238,9 @@
         game.over = true;
         keyboard.hidden = true;
         if (result.status === "won") {
-          window.setTimeout(() => row.classList.add("victory"), 500);
+          requestAnimationFrame(() => row.classList.add("victory"));
         } else {
-          revealAnswer(result.answer);
+          showWordBanner(result.answer);
         }
         window.setTimeout(() => showFinished(result), victoryDelay);
       }
