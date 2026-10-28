@@ -101,6 +101,7 @@
   }
 
   async function start() {
+    window.Shabdle.hideWordBanner();
     if (!token) {
       showError(new Error("Log in to play Ladder."));
       return;

@@ -1,11 +1,12 @@
 (() => {
-const { $, $$, api, toast, showWordBanner, guard, setupNav } = window.Shabdle;
+const { $, $$, api, toast, showWordBanner, hideWordBanner, guard, setupNav } = window.Shabdle;
 const KEY_ROWS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
 const VICTORY_DELAY = 3000;
 
 async function initGame(mode) {
   setupNav();
   if (!guard()) return;
+  hideWordBanner();
 
   const customCode =
     mode === "custom"

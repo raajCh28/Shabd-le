@@ -37,9 +37,7 @@ function showWordBanner(word) {
 }
 
 function hideWordBanner() {
-  const banner = document.querySelector(".word-banner");
-  banner?.classList.remove("visible");
-  window.setTimeout(() => banner?.remove(), 180);
+  document.querySelector(".word-banner")?.remove();
 }
 
 function loginPath() {

@@ -1,5 +1,5 @@
 (() => {
-  const { $, api, toast, showWordBanner, guard, setupNav } = window.Shabdle;
+  const { $, api, toast, showWordBanner, hideWordBanner, guard, setupNav } = window.Shabdle;
   const keyRows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
   const rank = { absent: 1, present: 2, correct: 3 };
   const victoryDelay = 3000;
@@ -133,6 +133,7 @@
   }
 
   function renderGame(state) {
+    if (state.status === "playing") hideWordBanner();
     gamePanel.hidden = false;
     hideMenus();
     message.textContent = "";
@@ -166,6 +167,7 @@
   }
 
   async function startRound(length, maxGuesses, hardMode) {
+    hideWordBanner();
     const state = await api("/api/normal/start", {
       method: "POST",
       body: JSON.stringify({ length, max_guesses: maxGuesses, hard_mode: hardMode }),
