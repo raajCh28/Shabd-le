@@ -7,6 +7,7 @@
     bestStreak,
     homeOnClose = false,
     reloadOnClose = false,
+    closeLabel = "Got it",
   }) => {
     document.querySelector(".answer-popup")?.remove();
 
@@ -32,6 +33,7 @@
     answerElement.hidden = !answer;
     const stats = dialog.querySelector(".answer-popup-stats");
     const closeButton = dialog.querySelector(".answer-popup-close");
+    closeButton.textContent = closeLabel;
     if (Number.isFinite(currentStreak) && Number.isFinite(bestStreak)) {
       stats.hidden = false;
       dialog.querySelector(".current-streak").textContent = `${currentStreak} days`;
@@ -43,7 +45,7 @@
       dialog.close();
       dialog.remove();
     };
-    closeButton.addEventListener("click", () => {
+    const finish = () => {
       if (homeOnClose) {
         location.href = "/";
         return;
@@ -53,9 +55,22 @@
         return;
       }
       close();
-    });
+    };
+    closeButton.addEventListener("click", finish);
     dialog.addEventListener("click", (event) => {
-      if (event.target === dialog) close();
+      if (event.target === dialog) finish();
+    });
+    dialog.addEventListener("cancel", (event) => {
+      if (homeOnClose || reloadOnClose) {
+        event.preventDefault();
+        finish();
+      }
+    });
+    dialog.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && (homeOnClose || reloadOnClose)) {
+        event.preventDefault();
+        finish();
+      }
     });
     dialog.addEventListener("close", () => dialog.remove(), { once: true });
     dialog.showModal();

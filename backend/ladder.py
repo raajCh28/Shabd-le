@@ -79,6 +79,7 @@ def get_state(user: User, db: Session) -> dict:
         "run_number": progress.run_number,
         "guesses_used": len(history),
         "guesses": history,
+        "revealed_answers": json.loads(progress.last_answers or "{}"),
     }
 
 

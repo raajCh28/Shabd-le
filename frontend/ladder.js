@@ -8,6 +8,9 @@
   const nav = $("#nav");
   const keyRows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
   const rank = { absent: 1, present: 2, correct: 3 };
+  let activeLength = 5;
+  let activeMaxGuesses = 6;
+  let revealedAnswers = {};
 
   const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -69,18 +72,43 @@
 
   function renderStatus(state, climbed = state.run_best_length || 0) {
     const rung = Math.max(0, Math.min(20, climbed));
+    revealedAnswers = state.revealed_answers || {};
     statusPanel.classList.remove("error");
     statusPanel.innerHTML = `
       <div class="ladder-rungs" aria-label="Climb progress">${Array.from({ length: 16 }, (_, i) => {
         const length = i + 5;
         const isCurrent = length === state.length;
-        return `<span class="${length <= rung ? "reached" : ""} ${isCurrent ? "current" : ""}">${length}</span>`;
+        const canReview = length < state.length && length <= rung && Boolean(revealedAnswers[length]);
+        const classes = [length <= rung && "reached", isCurrent && "current"].filter(Boolean).join(" ");
+        return isCurrent
+          ? `<button class="ladder-rung ${classes}" type="button" data-ladder-step="${length}" data-ladder-action="continue" aria-label="Continue at ${length} letters" aria-current="step">${length}</button>`
+          : canReview
+            ? `<button class="ladder-rung ${classes}" type="button" data-ladder-step="${length}" data-ladder-action="review" aria-label="View the solved ${length}-letter word">${length}</button>`
+          : `<span class="${classes}">${length}</span>`;
       }).join("")}</div>`;
     const subtitle = $("#game-subtitle");
     if (subtitle) {
       subtitle.textContent = `Step ${state.length} of 20 · six guesses to solve it.`;
     }
   }
+
+  statusPanel.addEventListener("click", (event) => {
+    const rung = event.target.closest("[data-ladder-step]");
+    if (!rung) return;
+    if (rung.dataset.ladderAction === "continue") {
+      location.reload();
+      return;
+    }
+    if (rung.dataset.ladderAction === "review") {
+      const length = Number(rung.dataset.ladderStep);
+      window.showAnswerPopup({
+        answer: revealedAnswers[length].toUpperCase(),
+        title: `${length}-letter step`,
+        message: "Previously solved word. Your active step is unchanged.",
+        closeLabel: "Back to ladder",
+      });
+    }
+  });
 
   function buildKeyboard() {
     keyboard.hidden = false;
@@ -92,13 +120,56 @@
       </div>`).join("");
   }
 
+  function updateLadderLayout() {
+    const availableWidth = Math.max(0, window.innerWidth - 24);
+    const preferredTile = Math.min(window.innerWidth * 0.12, 64);
+    const progress = (activeLength - 5) / 15;
+    const verticalScale = Math.min(1, Math.max(0.65, (window.innerHeight - 100) / 800));
+    const scale = (1 - progress * 0.22) * verticalScale;
+    const tileGap = Math.max(1.5, 5 - progress * 3.5);
+    const keyboardHeight = Math.max(36, 52 * scale);
+
+    board.style.setProperty("--ladder-tile-gap", `${tileGap}px`);
+    keyboard.style.setProperty("--ladder-keyboard-width", `${Math.min(500, window.innerWidth - 16, Math.max(Math.min(300, window.innerWidth - 16), activeLength * (preferredTile + tileGap) * 0.52))}px`);
+    keyboard.style.setProperty("--ladder-key-height", `${keyboardHeight}px`);
+    keyboard.style.setProperty("--ladder-key-font-size", `${Math.max(10, 13 * scale)}px`);
+
+    const boardTop = board.getBoundingClientRect().top;
+    const keyboardBox = keyboard.getBoundingClientRect();
+    const shell = document.querySelector(".ladder-shell");
+    const messageStyle = getComputedStyle(message);
+    const keyboardMargin = parseFloat(getComputedStyle(keyboard).marginTop) || 0;
+    const messageSpace = message.getBoundingClientRect().height + (parseFloat(messageStyle.marginTop) || 0);
+    const shellPadding = parseFloat(getComputedStyle(shell).paddingBottom) || 0;
+    const reservedHeight = keyboardBox.height + keyboardMargin + messageSpace + shellPadding + 12;
+    const verticalTile = (window.innerHeight - boardTop - reservedHeight - (activeMaxGuesses - 1) * tileGap) / activeMaxGuesses;
+    const horizontalTile = (availableWidth - (activeLength - 1) * tileGap) / activeLength;
+    const tileSize = Math.max(24, Math.min(preferredTile, verticalTile, horizontalTile));
+    const boardWidth = activeLength * tileSize + (activeLength - 1) * tileGap;
+    const keyboardWidth = Math.min(
+      500,
+      window.innerWidth - 16,
+      Math.max(Math.min(300, window.innerWidth - 16), boardWidth * 0.52),
+    );
+
+    board.style.setProperty("--board-width", `${boardWidth}px`);
+    board.style.setProperty("--ladder-tile-height", `${tileSize}px`);
+    keyboard.style.setProperty("--ladder-keyboard-width", `${keyboardWidth}px`);
+    keyboard.style.setProperty("--ladder-key-max-width", `${Math.max(18, Math.min(44, (keyboardWidth - 50) / 10))}px`);
+    keyboard.style.setProperty("--ladder-wide-key-width", `${Math.max(34, Math.min(66, keyboardWidth * 0.14))}px`);
+  }
+
   function buildBoard(length, maxGuesses) {
+    activeLength = length;
+    activeMaxGuesses = maxGuesses;
     board.style.setProperty("--word-length", length);
-    board.style.setProperty("--board-width", `min(calc(${length} * (min(12vw, 64px) + 7px)), 92vw)`);
+    updateLadderLayout();
     board.innerHTML = Array.from({ length: maxGuesses }, () =>
       `<div class="row">${Array.from({ length }, () => '<div class="tile"></div>').join("")}</div>`,
     ).join("");
   }
+
+  window.addEventListener("resize", updateLadderLayout);
 
   async function start() {
     window.Shabdle.hideWordBanner();
@@ -122,6 +193,7 @@
       renderStatus(state, state.run_best_length || 0);
       buildBoard(game.length, game.max);
       buildKeyboard();
+      updateLadderLayout();
       if (nav) {
         nav.innerHTML = '<a href="/dashboard.html">Your stats</a><button class="nav-button" id="logout" type="button">Log out</button>';
         $("#logout").addEventListener("click", () => {
@@ -220,7 +292,13 @@
           keyboard.hidden = true;
           const climbed = result.status === "complete" ? 20 : result.status === "lost" ? result.climbed_to : Math.max(game.length, state.run_best_length || 0);
           const nextLength = result.status === "won" ? result.next_length : 5;
-          const nextState = { ...state, length: nextLength, best_length: Math.max(state.best_length, climbed), run_best_length: climbed };
+          const nextState = {
+            ...state,
+            length: nextLength,
+            best_length: Math.max(state.best_length, climbed),
+            run_best_length: climbed,
+            revealed_answers: { ...(state.revealed_answers || {}), [game.length]: result.answer },
+          };
           renderStatus(nextState, climbed);
           message.classList.add("result-message");
 
@@ -235,6 +313,7 @@
               title: "Step cleared!",
               message: `You solved the ${game.length}-letter word.`,
               reloadOnClose: true,
+              closeLabel: "Continue to next step",
             });
           } else if (result.status === "complete") {
             message.innerHTML = "";
