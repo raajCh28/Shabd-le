@@ -1,3 +1,4 @@
+import json
 import os
 import secrets
 import string
@@ -19,8 +20,8 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from auth import read_token
-from game import VALID_GUESSES, pick_daily_word, score_guess, verify_finished_guesses
-from models import Base, CustomAttempt, CustomGame, DailyResult, DailyWord, LadderProgress, User
+from game import VALID_GUESSES, pick_daily_word, score_guess
+from models import Base, CustomAttempt, CustomGame, DailyResult, DailyWord, LadderProgress, PlayState, User
 from auth_routes import make_router as make_auth_router
 from ladder import make_router as make_ladder_router
 from normal import make_router as make_normal_router
@@ -105,7 +106,9 @@ class CustomIn(BaseModel):
 
 class GuessIn(BaseModel):
     guess: str
-    guesses: list[str] = Field(default_factory=list)
+    # Deprecated: the server now stores guess history itself. Accepted but ignored
+    # so cached old clients keep working.
+    guesses: list[str] = Field(default_factory=list, max_length=8)
 
 
 def get_db():
@@ -148,66 +151,76 @@ def normalize_guess(raw: str, length: int) -> str:
     return guess
 
 
-def validate_prior(guesses: list[str], answer: str, allowed: bool):
-    if len(guesses) > 5:
-        raise HTTPException(422, "Too many prior guesses")
-    cleaned = []
-    for item in guesses:
-        guess = normalize_guess(item, len(answer))
-        if allowed and guess.lower() not in VALID_GUESSES:
-            raise HTTPException(422, "Not in the English dictionary")
-        cleaned.append(guess)
-    if any(all(tile == "correct" for tile in score_guess(g, answer)) for g in cleaned):
+MAX_GUESSES = 6
+
+
+def play_state(db: Session, user_id: int, kind: str, ref: str) -> PlayState:
+    row = db.query(PlayState).filter_by(user_id=user_id, kind=kind, ref=ref).first()
+    if not row:
+        row = PlayState(user_id=user_id, kind=kind, ref=ref, guesses_json="[]")
+        db.add(row)
+        db.flush()
+    return row
+
+
+def history_of(row: PlayState | None, answer: str) -> list[dict]:
+    """Server-held guesses with freshly scored tiles, for resuming a game."""
+    if not row:
+        return []
+    return [{"guess": g, "result": score_guess(g, answer)} for g in json.loads(row.guesses_json or "[]")]
+
+
+def apply_guess(db: Session, row: PlayState, raw_guess: str, answer: str, record):
+    """Score one guess against the server-side history. The client cannot reset
+    its own guess count, so the six-guess limit is enforced here."""
+    prior = json.loads(row.guesses_json or "[]")
+    if len(prior) >= MAX_GUESSES or any(g == answer for g in prior):
         raise HTTPException(409, "Game already finished")
-    return cleaned
-
-
-def response_for_guess(guess: str, prior: list[str], answer: str, record, db: Session):
+    guess = normalize_guess(raw_guess, len(answer))
+    if guess != answer and guess.lower() not in VALID_GUESSES:
+        raise HTTPException(422, "Not in the English dictionary")
     result = score_guess(guess, answer)
-    won = all(tile == "correct" for tile in result)
+    won = guess == answer
     used = len(prior) + 1
-    over = won or used >= 6
+    over = won or used >= MAX_GUESSES
+    row.guesses_json = json.dumps([*prior, guess])
     if over:
-        record(won, used, [*prior, guess], db)
+        record(won, used)  # raises HTTPException(409) if already recorded
+    db.commit()
     status = "won" if won else "lost" if over else "playing"
-    return {"result": result, "status": status, "guesses_used": used,
-            **({"answer": answer} if over else {})}
+    return {"result": result, "status": status, "guesses_used": used, **({"answer": answer} if over else {})}
 
 
 @app.get("/api/daily/today")
 def daily_today(user: User = Depends(current_user), db: Session = Depends(get_db)):
     today = date.today()
-    get_or_create_daily(db, today)
+    answer = get_or_create_daily(db, today).upper()
     played = db.query(DailyResult).filter_by(user_id=user.id, word_date=today).first()
-    return {"date": str(today), "length": 5, "max_guesses": 6,
-            "already_played": played is not None, "won": played.won if played else None}
+    row = db.query(PlayState).filter_by(user_id=user.id, kind="daily", ref=str(today)).first()
+    return {"date": str(today), "length": 5, "max_guesses": MAX_GUESSES,
+            "already_played": played is not None, "won": played.won if played else None,
+            "guesses": history_of(row, answer),
+            **({"answer": answer} if played else {})}
 
 
 @app.post("/api/daily/guess")
 @limiter.limit("60/minute")
 def daily_guess(request: Request, data: GuessIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
     today = date.today()
-    row = db.query(DailyResult).filter_by(user_id=user.id, word_date=today).first()
-    if row:
+    if db.query(DailyResult).filter_by(user_id=user.id, word_date=today).first():
         raise HTTPException(409, "Already played today")
     answer = get_or_create_daily(db, today).upper()
-    prior = validate_prior(data.guesses, answer, allowed=True)
-    guess = normalize_guess(data.guess, 5)
-    if guess.lower() not in VALID_GUESSES:
-        raise HTTPException(422, "Not in the English dictionary")
+    row = play_state(db, user.id, "daily", str(today))
 
-    def save(won, used, all_guesses, session):
-        valid, verified_used = verify_finished_guesses(all_guesses, answer)
-        if not valid or verified_used != used:
-            raise HTTPException(400, "Could not verify finished game")
-        session.add(DailyResult(user_id=user.id, word_date=today, won=won, guesses_used=used))
+    def record(won, used):
+        db.add(DailyResult(user_id=user.id, word_date=today, won=won, guesses_used=used))
         try:
-            session.commit()
+            db.flush()
         except IntegrityError:
-            session.rollback()
+            db.rollback()
             raise HTTPException(409, "Already played today")
 
-    return response_for_guess(guess, prior, answer, save, db)
+    return apply_guess(db, row, data.guess, answer, record)
 
 
 def find_custom(db: Session, code: str):
@@ -256,8 +269,12 @@ def my_custom(user: User = Depends(current_user), db: Session = Depends(get_db))
 def open_custom(code: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
     game = find_custom(db, code)
     attempt = db.query(CustomAttempt).filter_by(game_id=game.id, player_id=user.id).first()
-    return {"length": game.length, "max_guesses": 6, "creator": game.creator_id == user.id,
-            "already_played": attempt is not None, "won": attempt.won if attempt else None}
+    row = db.query(PlayState).filter_by(user_id=user.id, kind="custom", ref=game.share_code).first()
+    answer = game.answer.upper()
+    return {"length": game.length, "max_guesses": MAX_GUESSES, "creator": game.creator_id == user.id,
+            "already_played": attempt is not None, "won": attempt.won if attempt else None,
+            "guesses": history_of(row, answer),
+            **({"answer": answer} if attempt else {})}
 
 
 @app.get("/api/custom/{code}/result")
@@ -283,24 +300,17 @@ def custom_guess(request: Request, code: str, data: GuessIn, user: User = Depend
     if db.query(CustomAttempt).filter_by(game_id=game.id, player_id=user.id).first():
         raise HTTPException(409, "Already played this game")
     answer = game.answer.upper()
-    # Previously entered guesses are accepted as history for games already in progress.
-    prior = validate_prior(data.guesses, answer, allowed=False)
-    guess = normalize_guess(data.guess, game.length)
-    if guess != answer and guess.lower() not in VALID_GUESSES:
-        raise HTTPException(422, "Not in the English dictionary")
+    row = play_state(db, user.id, "custom", game.share_code)
 
-    def save(won, used, all_guesses, session):
-        valid, verified_used = verify_finished_guesses(all_guesses, answer)
-        if not valid or verified_used != used:
-            raise HTTPException(400, "Could not verify finished game")
-        session.add(CustomAttempt(game_id=game.id, player_id=user.id, won=won, guesses_used=used))
+    def record(won, used):
+        db.add(CustomAttempt(game_id=game.id, player_id=user.id, won=won, guesses_used=used))
         try:
-            session.commit()
+            db.flush()
         except IntegrityError:
-            session.rollback()
+            db.rollback()
             raise HTTPException(409, "Already played this game")
 
-    return response_for_guess(guess, prior, answer, save, db)
+    return apply_guess(db, row, data.guess, answer, record)
 
 
 @app.get("/api/stats/me")
@@ -353,6 +363,16 @@ def play_page(code: str):
     return FileResponse(FRONTEND / "game.html", headers={"Cache-Control": "no-store, max-age=0"})
 
 
-app.mount("/static", StaticFiles(directory=FRONTEND), name="static")
+class RevalidatingStaticFiles(StaticFiles):
+    """Serve static assets with ETags but force the browser to revalidate each load,
+    so edited JS/CSS is never stale and no manual ?v=N cache-busting is needed."""
+
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
+app.mount("/static", RevalidatingStaticFiles(directory=FRONTEND), name="static")
 app.include_router(make_ladder_router(current_user, get_db, limiter))
 app.include_router(make_normal_router(current_user, get_db, limiter))

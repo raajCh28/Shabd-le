@@ -1,228 +1,96 @@
+/* Daily + Custom share-link games. Guess history lives on the server, so a
+   refresh resumes the round and the six-guess limit cannot be reset. */
 (() => {
-const { $, $$, api, toast, showWordBanner, hideWordBanner, guard, setupNav } = window.Shabdle;
-const KEY_ROWS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
-const VICTORY_DELAY = 3000;
+const { $, api, toast, showWordBanner, hideWordBanner, guard, setupNav, createGame, shareText } = window.Shabdle;
+const END_DELAY = 1800;
 
 async function initGame(mode) {
   setupNav();
   if (!guard()) return;
   hideWordBanner();
 
-  const customCode =
-    mode === "custom"
-      ? decodeURIComponent(location.pathname.split("/").filter(Boolean).pop() || "")
-      : "";
-  const endpoint =
-    mode === "daily" ? "/api/daily" : "/api/custom/" + encodeURIComponent(customCode);
+  const board = $("#board");
+  const keyboard = $("#keyboard");
   const message = $("#game-message");
+  const code = mode === "custom"
+    ? decodeURIComponent(location.pathname.split("/").filter(Boolean).pop() || "")
+    : "";
+  const base = mode === "daily" ? "/api/daily" : "/api/custom/" + encodeURIComponent(code);
 
   try {
-    const info = await api(mode === "daily" ? "/api/daily/today" : endpoint);
-    const game = {
-      length: info.length,
-      max: info.max_guesses,
-      row: 0,
-      current: "",
-      past: [],
-      over: info.already_played,
-      submitting: false,
-      states: {},
-      endpoint,
-    };
-    const board = $("#board");
+    const info = await api(mode === "daily" ? "/api/daily/today" : base);
+    const title = mode === "daily" ? `Shabdle Daily ${info.date}` : "Shabdle custom word";
 
-    board.style.setProperty("--word-length", game.length);
-    board.style.setProperty(
+    const layout = () => board.style.setProperty(
       "--board-width",
-      `min(calc(${game.length} * (min(12vw, 64px) + 7px)), 92vw)`,
+      `min(calc(${info.length} * (min(12vw, 64px) + 7px)), 92vw)`,
     );
-    board.innerHTML = Array.from(
-      { length: game.max },
-      () =>
-        `<div class="row">${Array.from(
-          { length: game.length },
-          () => '<div class="tile"></div>',
-        ).join("")}</div>`,
-    ).join("");
 
-    const keyboard = $("#keyboard");
-    keyboard.innerHTML = KEY_ROWS.map(
-      (row, index) => `<div class="key-row">
-        ${
-          index === 2
-            ? '<button class="key wide" data-key="ENTER">Enter</button>'
-            : ""
+    const showEnd = (won, answer, used) => {
+      message.innerHTML = "";
+      const line = document.createElement("span");
+      line.textContent = won
+        ? `Solved in ${used} of ${info.max_guesses}. `
+        : `The word was ${answer}. `;
+      const share = document.createElement("button");
+      share.type = "button";
+      share.className = "button";
+      share.textContent = "Share result";
+      share.addEventListener("click", () =>
+        shareText(`${title} ${won ? used : "X"}/${info.max_guesses}\n\n${game.shareGrid()}`));
+      message.append(line, share);
+    };
+
+    const game = createGame({
+      board, keyboard,
+      length: info.length,
+      maxGuesses: info.max_guesses,
+      restored: info.guesses || [],
+      layout,
+      onMessage: toast,
+      // Only the new guess is sent; the server already holds the history.
+      onSubmit: (guess) => api(base + "/guess", { method: "POST", body: JSON.stringify({ guess }) }),
+      onResult: async (result) => {
+        if (result.status === "playing") return;
+        const won = result.status === "won";
+        if (!won) showWordBanner(result.answer);
+        showEnd(won, result.answer, result.guesses_used);
+
+        let popup;
+        if (mode === "daily") {
+          const stats = await api("/api/stats/me").catch(() => null);
+          popup = {
+            answer: "",
+            title: won ? "Daily streak" : "Daily stats",
+            message: won
+              ? `Solved in ${result.guesses_used} ${result.guesses_used === 1 ? "guess" : "guesses"}.`
+              : "Try again tomorrow.",
+            currentStreak: stats?.current_streak ?? 0,
+            bestStreak: stats?.max_streak ?? 0,
+          };
+        } else if (won) {
+          popup = { answer: result.answer, title: "Puzzle solved!" };
         }
-        ${[...row]
-          .map(
-            (letter) =>
-              `<button class="key" data-key="${letter}">${letter}</button>`,
-          )
-          .join("")}
-        ${
-          index === 2
-            ? '<button class="key wide" data-key="BACKSPACE" aria-label="Backspace">⌫</button>'
-            : ""
-        }
-      </div>`,
-    ).join("");
+        if (popup) setTimeout(() => window.showAnswerPopup(popup), END_DELAY);
+      },
+    });
 
     if (info.already_played) {
-      board.classList.add("board-muted");
-      keyboard.hidden = true;
-      message.textContent = info.won
-        ? "You solved today’s word. See you tomorrow."
-        : "Today’s puzzle is complete. Come back tomorrow for a new one.";
-      return;
+      game.finish();
+      showEnd(info.won, info.answer, (info.guesses || []).length);
+      if (mode === "daily") {
+        message.prepend(info.won ? "You solved today’s word. " : "Today’s puzzle is complete. ", "See you tomorrow. ");
+      }
+    } else if (info.guesses?.length) {
+      message.textContent = `Resumed — ${info.guesses.length} ${info.guesses.length === 1 ? "guess" : "guesses"} used.`;
     }
-
-    const updateTiles = () => {
-      $$(".row", board).forEach((row, rowIndex) => {
-        row.classList.toggle("is-active", !game.over && rowIndex === game.row);
-        $$(".tile", row).forEach((tile, colIndex) => {
-          tile.textContent =
-            rowIndex === game.row ? game.current[colIndex] || "" : tile.textContent;
-
-          if (rowIndex === game.row && game.current[colIndex]) {
-            tile.classList.add("filled");
-          } else {
-            tile.classList.remove("filled");
-          }
-        });
-      });
-    };
-
-    const addLetter = (letter) => {
-      if (game.over || game.current.length >= game.length || !/^[A-Z]$/.test(letter)) {
-        return;
-      }
-
-      game.current += letter;
-      updateTiles();
-    };
-
-    const removeLetter = () => {
-      if (game.over || !game.current) return;
-      game.current = game.current.slice(0, -1);
-      updateTiles();
-    };
-
-    const updateKeyboard = (guess, result) => {
-      [...guess].forEach((letter, index) => {
-        const rank = { absent: 1, present: 2, correct: 3 };
-        if ((rank[result[index]] || 0) > (rank[game.states[letter]] || 0)) {
-          game.states[letter] = result[index];
-        }
-
-        const key = $(`[data-key="${letter}"]`, keyboard);
-        if (key) {
-          key.classList.remove("absent", "present", "correct");
-          key.classList.add(game.states[letter]);
-        }
-      });
-    };
-
-    const submit = async () => {
-      if (game.over || game.submitting) return;
-      if (game.current.length !== game.length) {
-        toast(`Enter ${game.length} letters first`);
-        return;
-      }
-
-      const guess = game.current;
-      const row = $(".row:nth-child(" + (game.row + 1) + ")", board);
-      game.submitting = true;
-
-      try {
-        const data = await api(endpoint + "/guess", {
-          method: "POST",
-          body: JSON.stringify({ guess, guesses: game.past }),
-        });
-
-        row.classList.remove("is-active");
-        const tiles = $$(".tile", row);
-        for (let index = 0; index < tiles.length; index += 1) {
-          tiles[index].classList.remove("filled");
-          tiles[index].classList.add(data.result[index]);
-          await new Promise((resolve) => window.setTimeout(resolve, 160));
-        }
-        updateKeyboard(guess, data.result);
-        game.past.push(guess);
-        game.current = "";
-        game.row += 1;
-        game.submitting = false;
-        updateTiles();
-
-        if (data.status !== "playing") {
-          game.over = true;
-          keyboard.hidden = true;
-          message.textContent = "";
-          if (data.status === "won") {
-            requestAnimationFrame(() => row.classList.add("victory"));
-          }
-          if (data.status === "lost") {
-            showWordBanner(data.answer);
-          }
-
-          if (mode === "daily") {
-            const dailyStats = api("/api/stats/me").catch(() => null);
-            const showDailyResult = () => dailyStats.then((stats) => window.showAnswerPopup({
-              answer: "",
-              title: data.status === "won" ? "Daily streak" : "Daily stats",
-              message: data.status === "won"
-                ? `Solved in ${data.guesses_used} ${data.guesses_used === 1 ? "guess" : "guesses"}.`
-                : "Try again tomorrow.",
-              currentStreak: stats?.current_streak ?? 0,
-              bestStreak: stats?.max_streak ?? 0,
-            }));
-            window.setTimeout(showDailyResult, data.status === "lost" ? 1500 : VICTORY_DELAY);
-          } else if (data.status !== "lost") {
-            window.showAnswerPopup({
-              answer: data.answer,
-              title: data.status === "won" ? "Puzzle solved!" : "Good try!",
-            });
-          }
-        }
-      } catch (error) {
-        game.submitting = false;
-        row.classList.remove("shake");
-        void row.offsetWidth;
-        row.classList.add("shake");
-        if (error.message !== "Login required") toast(error.message);
-      }
-    };
-
-    updateTiles();
-
-    keyboard.addEventListener("click", (event) => {
-      const key = event.target.closest("[data-key]")?.dataset.key;
-      if (key === "ENTER") {
-        submit();
-      } else if (key === "BACKSPACE") {
-        removeLetter();
-      } else if (key) {
-        addLetter(key);
-      }
-    });
-
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        submit();
-      } else if (event.key === "Backspace") {
-        removeLetter();
-      } else if (/^[a-zA-Z]$/.test(event.key)) {
-        addLetter(event.key.toUpperCase());
-      }
-    });
-
-    window.addEventListener("resize", () => {
-      board.style.setProperty(
-        "--board-width",
-        `min(calc(${game.length} * (min(12vw, 64px) + 7px)), 92vw)`,
-      );
-    });
   } catch (error) {
-    if (error.message !== "Login required") toast(error.message);
+    if (error.message === "Login required") return;
+    board.innerHTML = "";
+    keyboard.hidden = true;
+    message.textContent = error.message === "Game not found"
+      ? "This puzzle link doesn’t exist. Check the link and try again."
+      : error.message;
   }
 }
 

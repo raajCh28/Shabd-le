@@ -34,19 +34,3 @@ def score_guess(guess: str, answer: str) -> list[str]:
             result[index] = "present"
             remaining[letter] -= 1
     return result
-
-
-def verify_finished_guesses(guesses: list[str], answer: str) -> tuple[bool, int]:
-    """Verify the submitted game history really ends at its claimed win or loss."""
-    if not 1 <= len(guesses) <= 6:
-        return False, len(guesses)
-    for index, guess in enumerate(guesses):
-        if len(guess) != len(answer) or not guess.isalpha():
-            return False, len(guesses)
-        won = all(tile == "correct" for tile in score_guess(guess, answer))
-        if won and index != len(guesses) - 1:
-            return False, len(guesses)
-        if index < len(guesses) - 1 and won:
-            return False, len(guesses)
-    last_won = guesses[-1] == answer
-    return (last_won or len(guesses) == 6), len(guesses)

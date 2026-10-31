@@ -1,8 +1,6 @@
 (() => {
-  const { $, api, toast, showWordBanner, hideWordBanner, guard, setupNav } = window.Shabdle;
-  const keyRows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
-  const rank = { absent: 1, present: 2, correct: 3 };
-  const victoryDelay = 3000;
+  const { $, api, toast, store, showWordBanner, hideWordBanner, guard, setupNav, createGame } = window.Shabdle;
+  const END_DELAY = 1800;
   const gamePanel = $("#normal-game");
   const settingsForm = $("#normal-settings");
   const settingsToggle = $("#normal-settings-toggle");
@@ -12,72 +10,43 @@
   const keyboard = $("#normal-keyboard");
   const status = $("#normal-status");
   const message = $("#normal-message");
+  const CODE_KEY = "normalGameCode";
 
-  let game = null;
+  let session = null; // { code, length, max, hardMode, core }
 
-  function buildBoard(length, maxGuesses) {
-    board.style.setProperty("--word-length", length);
-    board.style.setProperty(
-      "--board-width",
-      `min(calc(${length} * (min(12vw, 64px) + 7px)), 92vw)`,
-    );
-    board.innerHTML = Array.from(
-      { length: maxGuesses },
-      () => `<div class="row">${Array.from({ length }, () => '<div class="tile"></div>').join("")}</div>`,
-    ).join("");
-  }
+  const report = (error) => { if (error.message !== "Login required") toast(error.message); };
 
-  function buildKeyboard() {
-    keyboard.hidden = false;
-    keyboard.innerHTML = keyRows.map((row, index) => `
-      <div class="key-row">
-        ${index === 2 ? '<button class="key wide" data-key="ENTER">Enter</button>' : ""}
-        ${[...row].map((letter) => `<button class="key" data-key="${letter}">${letter}</button>`).join("")}
-        ${index === 2 ? '<button class="key wide" data-key="BACKSPACE" aria-label="Backspace">⌫</button>' : ""}
-      </div>`).join("");
-  }
+  function layoutFor(length, maxGuesses) {
+    const shell = document.querySelector(".normal-shell");
+    const toolbar = document.querySelector(".normal-toolbar");
+    const topbar = document.querySelector(".topbar");
+    const shellStyle = getComputedStyle(shell);
+    const toolbarStyle = getComputedStyle(toolbar);
+    const messageStyle = getComputedStyle(message);
+    const verticalMargins = (style) => parseFloat(style.marginTop) + parseFloat(style.marginBottom);
+    const fixedHeight = topbar.getBoundingClientRect().height
+      + parseFloat(shellStyle.paddingTop) + parseFloat(shellStyle.paddingBottom)
+      + toolbar.getBoundingClientRect().height + verticalMargins(toolbarStyle)
+      + message.getBoundingClientRect().height + verticalMargins(messageStyle) + 8;
+    const availableHeight = Math.max(0, window.innerHeight - fixedHeight);
+    const keyboardRows = keyboard.querySelectorAll(".key-row").length;
+    const keyboardGap = 5;
+    const keyboardMargin = 10;
+    const keyHeight = Math.min(52, Math.max(30, availableHeight * 0.28 / keyboardRows));
+    const boardHeight = availableHeight - keyboardMargin
+      - keyboardRows * keyHeight - (keyboardRows - 1) * keyboardGap;
+    const availableWidth = Math.min(board.parentElement.clientWidth, window.innerWidth - 24, 760);
+    const tileGap = 5;
+    const preferred = Math.min(window.innerWidth * 0.12, 64);
+    const widthLimitedTile = (availableWidth - (length - 1) * tileGap) / length;
+    const heightLimitedTile = (boardHeight - (maxGuesses - 1) * tileGap) / maxGuesses;
+    const tile = Math.max(1, Math.min(preferred, widthLimitedTile, heightLimitedTile));
 
-  function updateTiles() {
-    const rows = [...board.querySelectorAll(".row")];
-    rows.forEach((row, rowIndex) => {
-      row.classList.toggle("is-active", !game.over && rowIndex === game.row);
-      [...row.querySelectorAll(".tile")].forEach((tile, column) => {
-        if (rowIndex === game.row) {
-          tile.textContent = game.current[column] || "";
-          tile.classList.toggle("filled", Boolean(game.current[column]));
-        }
-      });
-    });
-  }
-
-  function restoreGuesses(guesses) {
-    guesses.forEach((entry, rowIndex) => {
-      const row = board.querySelectorAll(".row")[rowIndex];
-      [...row.querySelectorAll(".tile")].forEach((tile, column) => {
-        tile.textContent = entry.guess[column];
-        tile.classList.add(entry.result[column]);
-        const letter = entry.guess[column];
-        if ((rank[entry.result[column]] || 0) > (rank[game.states[letter]] || 0)) {
-          game.states[letter] = entry.result[column];
-        }
-      });
-    });
-    Object.entries(game.states).forEach(([letter, result]) => {
-      keyboard.querySelector(`[data-key="${letter}"]`)?.classList.add(result);
-    });
-  }
-
-  function updateKeyboard(guess, result) {
-    [...guess].forEach((letter, index) => {
-      if ((rank[result[index]] || 0) > (rank[game.states[letter]] || 0)) {
-        game.states[letter] = result[index];
-      }
-      const key = keyboard.querySelector(`[data-key="${letter}"]`);
-      if (key) {
-        key.classList.remove("absent", "present", "correct");
-        key.classList.add(game.states[letter]);
-      }
-    });
+    board.style.setProperty("--tile-size", `${tile}px`);
+    board.style.setProperty("--tile-font-size", `${Math.max(7, Math.min(29, tile * 0.68))}px`);
+    board.style.setProperty("--tile-border-width", `${tile < 24 ? 1 : 2}px`);
+    board.style.setProperty("--board-width", `${length * tile + (length - 1) * tileGap}px`);
+    keyboard.style.setProperty("--normal-key-height", `${keyHeight}px`);
   }
 
   function syncSettings(state) {
@@ -109,61 +78,56 @@
     $("#normal-round-summary").textContent = summary;
     statsPanel.hidden = false;
     statsToggle.setAttribute("aria-expanded", "true");
-
-    try {
-      setStats(await api("/api/normal/stats"));
-    } catch (error) {
-      if (error.message !== "Login required") toast(error.message);
-    }
+    try { setStats(await api("/api/normal/stats")); } catch (error) { report(error); }
   }
 
   function showFinished(result) {
-    game.over = true;
-    keyboard.hidden = true;
+    const { length, max, hardMode } = session;
+    const tags = `${length} letters${hardMode ? " · Hard Mode" : ""}`;
     if (result.status === "lost") {
       showWordBanner(result.answer);
-      window.setTimeout(() => showStats("You used all guesses."), 1500);
-      return;
+      return showStats(`You used all ${max} guesses · ${tags}`);
     }
-    const won = result.status === "won";
-    const summary = won
-      ? `Solved in ${result.guesses_used} of ${game.max} guesses · ${game.length} letters${game.hardMode ? " · Hard Mode" : ""}`
-      : `You used all ${game.max} guesses · ${game.length} letters${game.hardMode ? " · Hard Mode" : ""}`;
-    void showStats(summary).then(() => $("#normal-play-again").focus());
+    return showStats(`Solved in ${result.guesses_used} of ${max} guesses · ${tags}`)
+      .then(() => $("#normal-play-again").focus());
   }
 
   function renderGame(state) {
+    session?.core.destroy();
     if (state.status === "playing") hideWordBanner();
     gamePanel.hidden = false;
     hideMenus();
     message.textContent = "";
     syncSettings(state);
     status.textContent = `${state.length} letters · ${state.max_guesses} ${state.max_guesses === 1 ? "try" : "tries"}${state.hard_mode ? " · Hard Mode" : ""}`;
-    game = {
-      code: state.game_code,
+
+    const code = state.game_code;
+    session = { code, length: state.length, max: state.max_guesses, hardMode: Boolean(state.hard_mode) };
+    session.core = createGame({
+      board, keyboard,
       length: state.length,
-      max: state.max_guesses,
-      hardMode: Boolean(state.hard_mode),
-      row: state.guesses.length,
-      current: "",
-      past: state.guesses.map((entry) => entry.guess),
-      states: {},
-      over: state.status !== "playing",
-      submitting: false,
-    };
-    buildBoard(game.length, game.max);
-    buildKeyboard();
-    restoreGuesses(state.guesses);
+      maxGuesses: state.max_guesses,
+      restored: state.guesses,
+      layout: () => layoutFor(state.length, state.max_guesses),
+      onMessage: toast,
+      isBlocked: () => !statsPanel.hidden || !settingsForm.hidden,
+      onSubmit: (guess, past) => api(`/api/normal/${encodeURIComponent(code)}/guess`, {
+        method: "POST",
+        body: JSON.stringify({ guess, guesses: past }),
+      }),
+      onResult: (result) => {
+        if (result.status === "playing") return;
+        setTimeout(() => showFinished(result), END_DELAY);
+      },
+    });
 
     if (state.status !== "playing") {
-
-      void showFinished({ status: state.status, answer: state.answer, guesses_used: state.guesses.length });
-      return;
+      session.core.finish();
+      showFinished({ status: state.status, answer: state.answer, guesses_used: state.guesses.length });
+    } else if (state.guesses.length) {
+      const n = state.guesses.length;
+      message.textContent = `Resume this round. ${n} ${n === 1 ? "guess" : "guesses"} used.`;
     }
-    updateTiles();
-    message.textContent = game.row
-      ? `Resume this round. ${game.row} ${game.row === 1 ? "guess" : "guesses"} used.`
-      : "";
   }
 
   async function startRound(length, maxGuesses, hardMode) {
@@ -172,16 +136,36 @@
       method: "POST",
       body: JSON.stringify({ length, max_guesses: maxGuesses, hard_mode: hardMode }),
     });
-    sessionStorage.setItem("normalGameCode", state.game_code);
+    store.set(CODE_KEY, state.game_code);
     renderGame(state);
   }
 
-  function readSettings() {
-    return {
-      length: Number($("#word-length").value),
-      maxGuesses: Number($("#try-count").value),
-      hardMode: $("#hard-mode").checked,
-    };
+  const readSettings = () => ({
+    length: Number($("#word-length").value),
+    maxGuesses: Number($("#try-count").value),
+    hardMode: $("#hard-mode").checked,
+  });
+
+  const newRound = async () => {
+    const { length, maxGuesses, hardMode } = readSettings();
+    try { await startRound(length, maxGuesses, hardMode); } catch (error) { report(error); }
+  };
+
+  async function init() {
+    setupNav();
+    if (!guard()) return;
+
+    const code = store.get(CODE_KEY);
+    if (code) {
+      try {
+        renderGame(await api(`/api/normal/${encodeURIComponent(code)}`));
+        return;
+      } catch (error) {
+        store.remove(CODE_KEY);
+        if (error.message === "Login required") return;
+      }
+    }
+    try { await startRound(5, 6, false); } catch (error) { report(error); }
   }
 
   function showSettings(show) {
@@ -192,150 +176,14 @@
     if (show) $("#word-length").focus();
   }
 
-  function addLetter(letter) {
-    if (!game || game.over || game.submitting || game.current.length >= game.length) return;
-    if (!/^[A-Z]$/.test(letter)) return;
-    game.current += letter;
-    updateTiles();
-  }
-
-  function removeLetter() {
-    if (!game || game.over || game.submitting || !game.current) return;
-    game.current = game.current.slice(0, -1);
-    updateTiles();
-  }
-
-  async function submitGuess() {
-    if (!game || game.over || game.submitting) return;
-    if (game.current.length !== game.length) {
-      toast(`Enter ${game.length} letters first`);
-      return;
-    }
-
-    const guess = game.current;
-    const row = board.querySelectorAll(".row")[game.row];
-    game.submitting = true;
-    try {
-      const result = await api(`/api/normal/${encodeURIComponent(game.code)}/guess`, {
-        method: "POST",
-        body: JSON.stringify({ guess, guesses: game.past }),
-      });
-      row.classList.remove("is-active");
-      const tiles = [...row.querySelectorAll(".tile")];
-      for (let index = 0; index < tiles.length; index += 1) {
-        tiles[index].classList.remove("filled");
-        tiles[index].classList.add(result.result[index]);
-        await new Promise((resolve) => window.setTimeout(resolve, 160));
-      }
-      updateKeyboard(guess, result.result);
-      game.past.push(guess);
-      game.current = "";
-      game.row += 1;
-      game.submitting = false;
-
-      if (result.status === "playing") {
-        updateTiles();
-      } else {
-        sessionStorage.setItem("normalGameCode", game.code);
-        game.over = true;
-        keyboard.hidden = true;
-        if (result.status === "won") {
-          requestAnimationFrame(() => row.classList.add("victory"));
-        } else {
-          showWordBanner(result.answer);
-        }
-        window.setTimeout(() => showFinished(result), victoryDelay);
-      }
-    } catch (error) {
-      game.submitting = false;
-      row.classList.remove("shake");
-      void row.offsetWidth;
-      row.classList.add("shake");
-      if (error.message !== "Login required") toast(error.message);
-    }
-  }
-
-  async function init() {
-    setupNav();
-    if (!guard()) return;
-
-    const code = sessionStorage.getItem("normalGameCode");
-    if (code) {
-      try {
-        renderGame(await api(`/api/normal/${encodeURIComponent(code)}`));
-        return;
-      } catch (error) {
-        sessionStorage.removeItem("normalGameCode");
-        if (error.message === "Login required") return;
-      }
-    }
-
-    try {
-      await startRound(5, 6, false);
-    } catch (error) {
-      if (error.message !== "Login required") toast(error.message);
-    }
-  }
-
   settingsToggle.addEventListener("click", () => showSettings(settingsForm.hidden));
+  statsToggle.addEventListener("click", () => (statsPanel.hidden ? showStats() : hideMenus()));
+  $("#try-count").addEventListener("input", (event) => { $("#try-count-value").value = event.target.value; });
+  settingsForm.addEventListener("submit", (event) => { event.preventDefault(); newRound(); });
+  $("#normal-play-again").addEventListener("click", () => { hideMenus(); newRound(); });
+  document.querySelectorAll("[data-close-menu]").forEach((b) => b.addEventListener("click", hideMenus));
+  document.addEventListener("click", (event) => { if (!event.target.closest(".normal-tools")) hideMenus(); });
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape") hideMenus(); });
 
-  statsToggle.addEventListener("click", () => {
-    if (!statsPanel.hidden) {
-      hideMenus();
-      return;
-    }
-    void showStats();
-  });
-
-  $("#try-count").addEventListener("input", (event) => {
-    $("#try-count-value").value = event.target.value;
-  });
-
-  settingsForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const { length, maxGuesses, hardMode } = readSettings();
-    try {
-      await startRound(length, maxGuesses, hardMode);
-    } catch (error) {
-      if (error.message !== "Login required") toast(error.message);
-    }
-  });
-
-  $("#normal-play-again").addEventListener("click", async () => {
-    hideMenus();
-    const { length, maxGuesses, hardMode } = readSettings();
-    try {
-      await startRound(length, maxGuesses, hardMode);
-    } catch (error) {
-      if (error.message !== "Login required") toast(error.message);
-    }
-  });
-
-  document.querySelectorAll("[data-close-menu]").forEach((button) => {
-    button.addEventListener("click", hideMenus);
-  });
-
-  document.addEventListener("click", (event) => {
-    if (!event.target.closest(".normal-tools")) hideMenus();
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") hideMenus();
-  });
-
-  keyboard.addEventListener("click", (event) => {
-    const key = event.target.closest("[data-key]")?.dataset.key;
-    if (key === "ENTER") submitGuess();
-    else if (key === "BACKSPACE") removeLetter();
-    else if (key) addLetter(key);
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (!game || gamePanel.hidden || !statsPanel.hidden || !settingsForm.hidden || event.target.matches("input, select, textarea")) return;
-    if (event.key === "Enter") submitGuess();
-    else if (event.key === "Backspace") removeLetter();
-    else if (/^[a-z]$/i.test(event.key)) addLetter(event.key.toUpperCase());
-  });
-
-  void init();
+  init();
 })();

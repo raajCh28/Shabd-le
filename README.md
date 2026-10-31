@@ -28,7 +28,7 @@ Registration creates an account immediately and signs the player in. Email verif
 - Normal Mode starts immediately with 5 letters and 6 guesses. Its settings button supports 3–20 letters, 2–8 guesses, and Hard Mode clue rules. Separate Normal Mode stats appear after each completed round.
 - Ladder runs from 5 to 20 letters. Each solved word advances one step; a missed step resets the run with a different five-letter word. Progress and guesses are saved on the server.
 - Custom words from 3 to 10 letters with random share codes.
-- Duplicate-aware server scoring, finished-game re-verification, and dashboard history/stats.
+- Duplicate-aware server scoring and dashboard history/stats.
 - Plain HTML, CSS, and JavaScript served by FastAPI.
 
 ## Code layout
@@ -38,7 +38,7 @@ Registration creates an account immediately and signs the player in. Email verif
 - `backend/ladder.py` contains the Ladder API, saved progress, and guess history; `backend/ladder_words.txt` is its private word bank.
 - `backend/normal.py` implements independently configured Normal Mode rounds and their saved state.
 - `backend/dictionary.py` loads the broad guess vocabulary. `backend/dictionary_words.txt` is the SCOWL/English Speller Database US size 70 list, filtered at load time to alphabetic words of 3–20 letters; its attribution and license are in `backend/dictionary-license.txt`.
-- `frontend/auth.js`, `frontend/ladder.js`, `frontend/normal.js`, `frontend/daily.js`, and `frontend/custom.js` hold the page-specific flows. `frontend/game-engine.js` shares the Daily and Custom board behavior; `frontend/common.js` contains shared navigation and API helpers.
+- `frontend/auth.js`, `frontend/ladder.js`, `frontend/normal.js`, `frontend/daily.js`, and `frontend/custom.js` hold the page-specific flows. `frontend/game-core.js` shares board and keyboard behavior across game modes, while `frontend/game-engine.js` handles the Daily and Custom game flow. `frontend/common.js` contains shared navigation and API helpers.
 - `frontend/game-feedback.js` and `frontend/game-feedback.css` provide the animated answer dialog used after a loss.
 - `frontend/ladder.css` contains Ladder-specific layout and progress indicator styles.
 

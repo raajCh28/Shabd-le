@@ -1,14 +1,21 @@
 .ladder-status {
   display: flex;
   align-items: center;
-  gap: 26px;
+  gap: 18px;
   flex-wrap: wrap;
-  margin: 26px auto 20px;
-  padding: 16px 18px;
+  margin: 18px auto 16px;
+  padding: 12px 14px;
   max-width: 680px;
   border: 1px solid #453b50;
-  border-radius: 14px;
+  border-radius: 12px;
   background: linear-gradient(120deg, rgba(50, 39, 62, .76), rgba(29, 25, 34, .94));
+}
+
+.ladder-shell > .game-mode-title {
+  margin: 0 0 12px;
+  font-size: clamp(20px, 3vw, 26px);
+  letter-spacing: .02em;
+  text-transform: none;
 }
 
 .ladder-status > div:not(.ladder-rungs) { display: grid; gap: 4px; }

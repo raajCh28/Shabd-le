@@ -1,0 +1,22 @@
+/* Additions for the shared game module. Loaded after styles.css. */
+
+body { min-height: 100dvh; }
+
+/* Reveal/victory stagger works for any word length (the old rules stopped at 9 tiles). */
+.row.victory .tile[data-state] { animation-delay: calc(var(--i, 0) * 70ms); }
+
+/* Colour-blind friendly palette (toggle: ◐ in the header). */
+body.hc .tile.correct, body.hc .key.correct { background: #f5793a; border-color: #f5793a; color: #1d0c02; box-shadow: none; }
+body.hc .tile.present, body.hc .key.present { background: #85c0f9; border-color: #85c0f9; color: #06233f; box-shadow: none; }
+body.hc .legend-tile.correct { background: #f5793a; }
+body.hc .legend-tile.present { background: #85c0f9; }
+
+/* Visible keyboard focus on the on-screen keys and header buttons. */
+.key:focus-visible, .nav-button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* The end-of-game message can now hold a Share button. */
+.game-message .button { margin-left: 8px; padding: 6px 14px; min-height: 0; font-size: 14px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .row.victory .tile, .row.shake { animation: none; }
+}

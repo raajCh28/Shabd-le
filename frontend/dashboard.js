@@ -5,11 +5,19 @@ async function initDashboard() {
   if (!guard()) return;
 
   try {
-    const [stats, games] = await Promise.all([
+    const [stats, games, daily, ladder] = await Promise.all([
       api("/api/normal/stats"),
       api("/api/custom/mine"),
+      api("/api/stats/me").catch(() => null),
+      api("/api/ladder/state").catch(() => null),
     ]);
+    const modeCards = [
+      daily && [`${daily.current_streak} / ${daily.max_streak}`, "Daily streak (now / best)"],
+      daily && [`${daily.wins} / ${daily.played}`, "Daily solved / played"],
+      ladder && [`${ladder.best_length || 0} letters`, "Ladder personal best"],
+    ].filter(Boolean);
     const cards = [
+      ...modeCards,
       [`${stats.wins} / ${stats.games_played}`, "Solved / played"],
       [stats.win_rate + "%", "Win rate"],
       [stats.current_streak, "Current streak"],

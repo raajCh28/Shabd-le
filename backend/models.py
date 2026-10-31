@@ -88,3 +88,16 @@ class CustomAttempt(Base):
     guesses_used = Column(Integer, nullable=False)
     finished_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     __table_args__ = (UniqueConstraint("game_id", "player_id"),)
+
+
+class PlayState(Base):
+    """Server-side guess history for Daily and Custom games (Normal and Ladder keep their own)."""
+
+    __tablename__ = "play_states"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    kind = Column(String(8), nullable=False)  # "daily" | "custom"
+    ref = Column(String(32), nullable=False)  # ISO date or share code
+    guesses_json = Column(String, default="[]", nullable=False)
+    __table_args__ = (UniqueConstraint("user_id", "kind", "ref"),)
